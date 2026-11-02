@@ -1,0 +1,363 @@
+{
+  "capes": [
+    {
+      "id": "cape-1",
+      "name": "Aurora Cape",
+      "image": "auroracape.png",
+      "releaseDate": "September 29, 2026",
+      "obtain": "Reportedly associated with a limited-time watch-time promotion. Verify the official promotion before publishing.",
+      "description": "A colorful cape featuring a pastel gradient inspired by an aurora.",
+      "details": "The described design includes cyan, lavender, pink, peach, and pale green colors."
+    },
+    {
+      "id": "cape-2",
+      "name": "Twisted Cape",
+      "image": "twistedcape.png",
+      "releaseDate": "September 29, 2026",
+      "obtain": "Reportedly associated with a Minecraft Dungeons II promotion. Verify the official reward conditions.",
+      "description": "A dark cape featuring a spine-like pattern.",
+      "details": "Verify the design and distribution details before publishing."
+    },
+    {
+      "id": "cape-3",
+      "name": "Hero Cape",
+      "image": "herocape.png",
+      "releaseDate": "September 29, 2026",
+      "obtain": "Reportedly associated with a Minecraft Dungeons II reward. Verify the official redemption instructions.",
+      "description": "A cape associated with a promotional reward.",
+      "details": "Verify the design and distribution details before publishing."
+    },
+    {
+      "id": "cape-4",
+      "name": "Crafter Cape",
+      "image": "craftercape.png",
+      "releaseDate": "May 30, 2026",
+      "obtain": "The Crafter Cape is a cape that could be obtained by players who attended the TwitchCon Rotterdam 2026 event in person",
+      "description": "The cape's design depicts an iron pickaxe lying on a crafting table background. Apart from the pickaxe's orientation,",
+      "details": "This cape could be obtained at the in-person TwitchCon 2026 event in Rotterdam, which took place on May 30â31, 2026."
+    },
+    {
+      "id": "cape-5",
+      "name": "Builder Cape",
+      "image": "buildercape.png",
+      "releaseDate": "May 30, 2026",
+      "obtain": "The Builder Cape is a cape that was given out to players by participating in a WatchTime Quest both on Twitch and TikTok. It was part of a promotion for both the TwitchCon Rotterdam 2026 and the Minecraft Movie Build Challenge.",
+      "description": "The cape's design depicts an iron pickaxe lying upside-down on a crafting table background. Apart from the pickaxe's orientation, it has the same design as the Crafter Cape.",
+      "details": "Players could receive this cape by redeeming a code,"
+    },
+    {
+      "id": "cape-6",
+      "name": "Moonlight Trail Cape",
+      "image": "moonlightcape.png",
+      "releaseDate": "May 27, 2026",
+      "obtain": "The Moonlight Trail Cape is a cape which is given to players by attending the Minecraft Experience: Moonlight Trail.",
+      "description": "Players can receive this cape by redeeming a code that will be sent by e-mail within 72 hours after completing the experience.",
+      "details": "The cape's design depicts a diamond beacon pyramid, with a beam appearing from a beacon. It is displayed on a dark blue background with a full moon in a starry night sky."
+    },
+    {
+      "id": "cape-7",
+      "name": "Zombie horse Cape",
+      "image": "zhorsecape.png",
+      "releaseDate": "December 18, 2025",
+      "obtain": "The Zombie Horse Cape is a cape that was given out to players by completing a community challenge. It was part of a promotion for the Mounts of Mayhem drop.",
+      "description": "The Zombie Horse Cape could be obtained as a reward for the Spear Mayhem challenge, which ran from December 12, 2025 at 16:00 UTC to December 15, 2025 at 18:00 UTC.",
+      "details": "The challenge involves killing any 5 mobs using a spear in Survival mode in Bedrock Edition during the time period.[1] The five mobs could be killed separately, and any neutral or hostile mob would count. In addition, going from Creative to Survival mode was allowed."
+    },
+    {
+      "id": "cape-8",
+      "name": "Copper Cape",
+      "image": "coppercape.png",
+      "releaseDate": "October 15, 2025",
+      "obtain": "The Copper Cape is a cape that was given out to players by completing a community challenge. It was part of a promotion for The Copper Age drop, Or Obtaining a code by watching a participating livestream[note 2] on one of these two platforms:Twitch/tiktok",
+      "description": "The Copper Cape could be obtained as the final reward of a special three-part community challenge known as The Copper Cape Quest, which began on September 30, 2025.",
+      "details": "The cape's design depicts a variation of the pattern that appears on chiseled copper and the top of copper chests. This pattern has various stages of oxidization,"
+    },
+    {
+      "id": "cape-9",
+      "name": "Common Cape",
+      "image": "commoncape.png",
+      "releaseDate": "May 6, 2025",
+      "obtain": "The Common Cape is a cape that was given out to players who used their Microsoft account to log into Bedrock Edition.",
+      "description": "Players who used their Microsoft account to log into Bedrock Edition on any platform during the distribution period to received this cape in both Bedrock Edition and Java Edition.",
+      "details": "The cape design is based on the grass block. A green semicircle with a darker gradient towards the center appears at the top of the cape, representing the grass. A brown base with silver dots represents the dirt."
+    },
+    {
+      "id": "cape-10",
+      "name": "Yearn Cape",
+      "image": "yearncape.png",
+      "releaseDate": "April 2, 2025",
+      "obtain": "The Yearn Cape is a cape that was given out to players by completing all six quests in the A Minecraft Movie Live Event. It was part of a promotion for A Minecraft Movie",
+      "description": "The Yearn cape is obtained by completing all 6 quests in the A Minecraft Movie Live Event, an event server hosted from March 25, 2025 to April 14, 2025 on Bedrock Edition.",
+      "details": "The cape's design depicts the mine entrance as shown in A Minecraft Movie, with rails leading into the mine. The backside of the cape depicts a view into the outside world from within the mine."
+    },
+    {
+      "id": "cape-11",
+      "name": "Menace Cape",
+      "image": "menacecape.png",
+      "releaseDate": "March 18, 2025",
+      "obtain": "The Menace Cape is a cape that was given out to players by participating in a WatchTime Quest on TikTok. It was part of a promotion for A Minecraft Movie",
+      "description": "Players could receive this cape by redeeming a code, which could be obtained by watching any Minecraft livestream on TikTok for three minutes. This could be done between March 18, 2025 and April 6, 2025.",
+      "details": "The cape's design depicts the Obsidian Gateway, as shown in A Minecraft Movie, against the red backdrop of the Nether.The elytra design depicts the movie's version of Steve, as portrayed by Jack Black."
+    },
+    {
+      "id": "cape-12",
+      "name": "Home Cape",
+      "image": "homecape.png",
+      "releaseDate": "March 18, 2025",
+      "obtain": "The Home Cape is a cape that was given out to players by participating in a WatchTime Quest on Twitch. It was part of a promotion for A Minecraft Movie",
+      "description": "Players could receive this cape by redeeming a code, which could be obtained by watching any Minecraft livestream on Twitch for three minutes. This could be done between March 18, 2025 and April 6, 2025.",
+      "details": "The cape's design depicts the Earth portal, as shown in A Minecraft Movie, with a grass base and a bright blue backdrop.The elytra design depicts the movie's version of Steve, as portrayed by Jack Black."
+    },
+    {
+      "id": "cape-13",
+      "name": "Mojang Office Cape",
+      "image": "mojangofficecape.png",
+      "releaseDate": "December 13, 2024",
+      "obtain": "The Mojang Office Cape is a cape that was give out to players by completing all five daily challenges in the Eerie Mojang Office Party. It was part of a promotion for The Garden Awakens drop,",
+      "description": "The Mojang Office cape was obtained by completing all five daily challenges in the Eerie Mojang Office Party event server.",
+      "details": "The cape's design includes one large, opened eyeblossom as the centerpiece with additional, smaller eyeblossoms around it. It is displayed on a dark background, mimicking the night when eyeblossoms bloom."
+    },
+    {
+      "id": "cape-14",
+      "name": "Minecraft Experience Cape",
+      "image": "minecraftexperiencecape.png",
+      "releaseDate": "October 23, 2024    October 18, 2024",
+      "obtain": "The Minecraft Experience Cape[JE only] or Villager Rescue Cape[BE only] is a cape which is given to players by attending the Minecraft Experience: Villager Rescue.",
+      "description": "Players can receive this cape by redeeming a code rewarded after completing the experience. The codes must be redeemed no later than 30 daysafter the event closes in the tour city where they were obtained.The code is distributed using one of two methods; which method is used varies by tour city. In some cities, codes are sent by email after visiting. In other cities, codes are distributed on printed cards when the Orb of Interaction is returned at the end of the experience.[2] Guests will not receive code emails from cities that use the printed card method in those cities, the code must be collected from the experience.",
+      "details": "The cape's design includes a face of a villager with a zombie villager on one side and a normal villager on the other. It is displayed on a dark purple background."
+    },
+    {
+      "id": "cape-15",
+      "name": "MCC 15th Year Cape",
+      "image": "mcc15thyearcape.png",
+      "releaseDate": "August 5, 2024    July 28, 2024",
+      "obtain": "The MCC 15th Year Cape is a cape the was given out to players by completing all 15 challenges in the MCC x Minecraft 15th Anniversary Party. It was part of the 15 Days of Minecraft celebrations.",
+      "description": "The MCC 15th Year cape was obtained by completing all 15 challenges in the MCC x Minecraft 15th Anniversary Party event server.",
+      "details": "The cape's design include a golden crown and large, white lettering of the number fifteen. It's placed on a red background with additional golden frills at the bottom and top."
+    },
+    {
+      "id": "cape-16",
+      "name": "Followers Cape",
+      "image": "followerscape.png",
+      "releaseDate": "July 1, 2024    May 18, 2024",
+      "obtain": "The Follower's Cape is a cape that was given out to players by participating in a WatchTime Quest on TikTok. It was part of the 15 Days of Minecraft celebrations",
+      "description": "Players could receive this cape by redeeming a code, which can be obtained by watching any Minecraft livestream on TikTok and typing the word, minecraft in the chat. This event started on May 18, 2024 and ended on June 18, 2024.[1][note 1]Depending on the user's region,there were additional requirements, such as watching for some time, or having to type minecraft in the chat.This task could not be completed normally in regions where either TikTok or its rewards program were unavailable. Players in these regions could obtain the cape by using a proxy/VPN, traveling to regions where they were available, or receiving a code from another player.",
+      "details": "The cape accompanies a white creeper face on a dark background which emulates a design similar to the TikTok logo, an electronic wave effect. On either side of the cape are two blue and red strips, acting as the border."
+    },
+    {
+      "id": "cape-17",
+      "name": "15 Anniversary Cape",
+      "image": "15anniversarycape.png",
+      "releaseDate": "May 17, 2024",
+      "obtain": "The 15th Anniversary Cape is a cape that was given out to players as part of the 15 Days of Minecraft celebrations alongside the Purple Heart Cape and the Follower's Cape.",
+      "description": "In order to get the cape, users had to go to Minecraft.net and claim it from a section on the 15th anniversary page. After doing so, it would appear in both Java Edition and Bedrock Edition.",
+      "details": "The cape features a light green checkered pattern with a creeper face. The back of the cape has a dark green checkered pattern with a light green 15 on the bottom."
+    },
+    {
+      "id": "cape-18",
+      "name": "Purple Heart Cape",
+      "image": "purpleheartcape.png",
+      "releaseDate": "July 1, 2024    May 15, 2024",
+      "obtain": "The Purple Heart Cape is a cape that was given out to players by participating in a WatchTime Quest on Twitch. It was part of the 15 Days of Minecraft celebrations",
+      "description": "Players could receive this cape by redeeming a code, which was obtainable by watching any Minecraft livestream on Twitch for 15 minutes. Codes could be obtained between May 15 and May 31, 2024.[1] [note 1]This task could not be completed normally in regions where either Twitch or its rewards program were unavailable. Players in these regions could obtain the cape by using a proxy/VPN, traveling to regions where they were available, or receiving a code from another player.",
+      "details": "The cape includes a purple heart with streaks on a white background. The bottom corners are filled with purple right-angled triangles, paired with a purple hood at the top. It uses similar colors of the Twitch logo."
+    },
+    {
+      "id": "cape-19",
+      "name": "Cherry Blossom Cape",
+      "image": "cherryblossomcape.png",
+      "releaseDate": "October 26, 2023    October 13, 2023",
+      "obtain": "The Cherry Blossom capeâ[JE only] or Cherry Capeâ[BE only] is a cape that was given out to players during Minecraft Live 2023.",
+      "description": "In Java Edition, this cape was given to players who voted on the 2023 Mob Vote through minecraft.net, the Minecraft Launcher, or the 2023 Mob Vote Event server.Joining the server but not voting did not grant the cape to the player in Java Edition.",
+      "details": "The cape design resembles the pink leaves of cherry trees.The elytra features a four-tone gradient pattern from white from the bottom to pink to the top."
+    },
+    {
+      "id": "cape-20",
+      "name": "Progress Pride Cape",
+      "image": "progresspridecape.png",
+      "releaseDate": "August 1, 2023",
+      "obtain": "This feature is exclusive to Bedrock Edition.Progress Pride Cape is region locked.This cape is only available in certain regions.The Progress Pride Cape is a cape that was given out to players during the Pride 2023 Sale event. It was redeemed though the Marketplace for free while it was available.",
+      "description": "The cape was obtainable for free through the Marketplace during the Pride 2023 Sale event as part of a collection of Character Creator pieces. Players were not given the cape automatically.The cape is only available in certain regions of the world.[1]",
+      "details": "The cape is a pixelated adaptation of Daniel Quasar's Progress Pride Flag design. It features 6 vertical stripes, colored red, orange, yellow, green, blue, and purple from left to right, resembling a rainbow pattern from the traditional rainbow flag. Hovering above are a series of downward-pointed chevrons, colored white, pink, light blue, brown, and black from top to bottom. This pattern is repeated with the elytra, instead being mirrored on both wings."
+    },
+    {
+      "id": "cape-21",
+      "name": "Vanilla Cape",
+      "image": "vanillacape.png",
+      "releaseDate": "August 31, 2022",
+      "obtain": "The Vanilla Capeâ[JE only] or One Vanilla Capeâ[BE only] is a cape given out to players who owned both Java Edition and Bedrock Edition for Windows before June 6, 2022 prior to both editions merging into one bundle.",
+      "description": "Players were able to obtain the cape under the condition that both Java Edition and Bedrock Edition for Windows are owned in the same Microsoft account before June 6, 2022.",
+      "details": "The cape's design resembles a grass block on top and bedrock on the bottom, representing both editions of the game."
+    },
+    {
+      "id": "cape-22",
+      "name": "Mojang Studios Cape",
+      "image": "mojangstudioscape.png",
+      "releaseDate": "July 25, 2021",
+      "obtain": "The Mojang Studios Cape is a cape given to employees of Mojang Studios.",
+      "description": "This cape is given to those employed by Mojang Studios on or after July 25, 2021. The cape is kept indefinitely even if the employee leaves Mojang, unless manually revoked.",
+      "details": "The cape's design reflects the logo change that came with the rebrand from Mojang to Mojang Studios. It features some of the white mojangs that make up their logo against a red backdrop."
+    },
+    {
+      "id": "cape-23",
+      "name": "Migrator Cape",
+      "image": "migratorcape.png",
+      "releaseDate": "July 9, 2021",
+      "obtain": "The Migrator Cape is a cape that was given out to players who migrated their Mojang accounts (used for Minecraft: Java Edition) to Microsoft accounts.",
+      "description": "Players who bought Minecraft: Java Edition before December 1, 2020 got this cape when migrating their account.The cape was first given out around July 9, 2021 and could be obtained until the end of the migration period on September 19, 2023."
+    },
+    {
+      "id": "cape-24",
+      "name": "Birthday Cape",
+      "image": "birthdaycape.png",
+      "releaseDate": "April 30, 2021",
+      "obtain": "The Birthday Cape is a personal cape that was given to a Mojang Studios employee.",
+      "description": "This cape was given to the account Gr8Bizzo, which is the account of Todd Baldwin."
+    },
+    {
+      "id": "cape-25",
+      "name": "Pan Cape",
+      "image": "pancape.png",
+      "releaseDate": " February 12, 2020",
+      "obtain": "The Pan capeis a cape given out for free to all players. The name is a pan, as the cape itself is designed to look like a stack of pancakes.",
+      "description": "Standard version edit This cape was originally used as a placeholder to create other capes, such as the Founder's Cape.[1] When it first released, players who participated in Bedrock Edition's development versions (then called Minecraft Beta) were able to use the cape temporarily. Since the release of Bedrock Edition 1.16.0, this cape has been given out to all Bedrock Edition players by default.Since May 8, 2025, the cape has also been given to all Java Edition players by default, including those who purchased the game after that date. Opening Bedrock Edition is not necessary to use the cape on Java Edition;",
+      "details": "The cape features a stack of pancakes on a white plate, covered in butter and syrup and displayed against a light blue background. The elytra design resembles a pancake when closed."
+    },
+    {
+      "id": "cape-26",
+      "name": "Founder's Cape",
+      "image": "founder'scape.png",
+      "releaseDate": " October 29, 2019",
+      "obtain": "The Founder's Cape is a cape that was given out to players during MINECON Live 2019. It was downloaded through the Marketplace.",
+      "description": "Players were able to obtain the Founder's cape skin pack through the Marketplace for a limited time for free. With the skin pack, only Steve and Alex could use the cape. Players who previously claimed the skin pack received the cape as Character Creator item when the Character Creator was released. It is no longer available in the Marketplace.",
+      "details": "The cape is a gold colorization of the MINECON 2011 Cape depicting a creeper face. A gradient from light at the bottom to darker at the top appears which is paired with a hood."
+    },
+    {
+      "id": "cape-27",
+      "name": "Turtle Cape",
+      "image": "turtlecape.png",
+      "releaseDate": "February 5, 2018",
+      "obtain": "The Turtle Cape is a personal cape.",
+      "description": "This cape was given to billyK_ for his suggestion of turtles, which was implemented into the game.[1] It was also given to some Mojang-owned accounts for endpoint testing."
+    },
+    {
+      "id": "cape-28",
+      "name": "MINECON 2016 Cape",
+      "image": "minecon2016cape.png",
+      "releaseDate": "September 26, 2016",
+      "obtain": "The MINECON 2016 Cape is a cape which was obtainable by attending MINECON 2016.",
+      "description": "Java Edition edit In Java Edition, this cape was given to MINECON 2016 attendees who redeemed an emailed link, provided they have scanned their ticket at the venue.[1]bedrock Edition edit Main article: MINECON 2016 Skin Pack In Bedrock Edition, this cape was available in skin packs. These skin packs featured Steve and Alex with all the MINECON capes. These capes are locked to the skin pack and cannot be equipped with other skins, so they are not considered to be fully available on this edition.From September 23, 2016 to October 3, 2016 in Legacy Console Edition and from September 22, 2016 to October 7, 2016 in Bedrock Edition, the MINECON 2016 Cape was available for free with the MINECON 2016 Skin Pack.",
+      "details": "The cape depicts an enderman face on a black cloth background. The elytra version depicts it with its mouth open, representing its provoked state."
+    },
+    {
+      "id": "cape-29",
+      "name": "MINECON 2015 Cape",
+      "image": "minecon2015cape.png",
+      "releaseDate": "July 9, 2015",
+      "obtain": "The MINECON 2015 Cape is a cape which was obtainable by attending MINECON 2015.",
+      "description": "Java Edition edit In Java Edition, this cape was given to MINECON 2015 attendees who redeemed an emailed link, provided they have scanned their ticket at the venue.[1] Bedrock Edition edit Main articles: Minecon 2015 Skin Pack and MINECON 2016 Skin Pack In Bedrock Edition, this cape was available in skin packs. These skin packs featured Steve and Alex skins with all the MINECON capes.",
+      "details": "The cape depicts an iron golem face on a cyan cloth background."
+    },
+    {
+      "id": "cape-30",
+      "name": "Chinese Transaltor Cape",
+      "image": "chinesetranslatorcape.png",
+      "releaseDate": "June 4, 2015",
+      "obtain": "The Translator Cape and the Chinese Translator Cape are capes given to notable contributors on the Minecraft translation project in Crowdin.",
+      "description": "Translator Cape edit The Translator Cape is given to proofreaders notable for their contribution.Chinese Translator Cape edit The Chinese Translator Cape was given to Powup333, Craft_Lawrence, and sjjklh for their contribution in Chinese.",
+      "details": "Both capes look identical when viewed from the back, only differing on their undersides. The Translator Cape depicts a pink T, whereas the Chinese Translator Cape depicts a Chinese flag, similar to the Japanese flag on the underside of cheapsh0t's Cape."
+    },
+    {
+      "id": "cape-31",
+      "name": "Spade Cape",
+      "image": "spadecape.png",
+      "releaseDate": "2015",
+      "obtain": "The Spade Cape is a personal cape that was given to a modder.",
+      "description": "This cape was given to MrMessiah as gratitude for developing the BetterLight mod, which got integrated into the game and was responsible for Minecraft's lighting and grass features.[1] Though it was discussed back in 2011, the cape hadn't been granted until 2015. The artist of the cape is unknown, but MrMessiah suggested that it might have been Jeb."
+    },
+    {
+      "id": "cape-32",
+      "name": "Moderator Cape",
+      "image": "moderatorcape.png",
+      "releaseDate": "December 25, 2014",
+      "obtain": "The Moderator Cape is a cape given to moderators on Mojira, the Mojang Bug Tracker.",
+      "description": "This cape is given to current and past moderators on Mojira. To become a moderator, a community member needs to be consistently active in assisting in the bug tracker's moderation and become a helper first."
+    },
+    {
+      "id": "cape-33",
+      "name": "Scrolls Champion Cape",
+      "image": "scrollschampioncape.png",
+      "releaseDate": "November 7, 2014",
+      "obtain": "The Scrolls Champion Cape is a cape that was given out to high-ranking players of Mojang's game Caller's Bane, formerly known as Scrolls.",
+      "description": "Starting on November 7th, 2014, this cape was given to players who earned first place on the Scrolls weekly ladder five separate times. As of September 30, 2015, capes were no longer given out for this. This is due to the fact that the player counts had gotten too low for the environment to remain competitive.During MINECON 2015, the Scrolls MINECON Open was held for Scrolls' in-game items and other prizes, with the top four players also getting the cape.On December 11-12, 2014, all players were temporarily shown with this cape to celebrate the release of Scrolls."
+    },
+    {
+      "id": "cape-34",
+      "name": "MINECON 2013 Cape",
+      "image": "minecon2013cape.png",
+      "releaseDate": "October 30, 2013",
+      "obtain": "The MINECON 2013 Cape is a cape which was obtainable by buying a ticket for MINECON 2013.",
+      "description": "Java Edition In Java Edition this cape was given to MINECON 2013 attendees who redeemed an emailed link",
+      "details": "The cape depicts an extended piston on a green cloth background. The elytra version displays the top face."
+    },
+    {
+      "id": "cape-35",
+      "name": "MINECON 2012 Cape",
+      "image": "minecon2012cape.png",
+      "releaseDate": "November 24, 2012",
+      "obtain": "The MINECON 2012 Cape is a cape which was obtainable by buying a ticket for MINECON 2012.",
+      "description": "Java Edition edit In Java Edition, this cape was given to MINECON 2012 attendees who redeemed an emailed link.",
+      "details": "The cape depicts a pickaxe on a blue cloth background."
+    },
+    {
+      "id": "cape-36",
+      "name": "Translator Cape",
+      "image": "translatorcape.png",
+      "releaseDate": "May 16, 2012",
+      "obtain": "The Translator Cape and the Chinese Translator Cape are capes given to notable contributors on the Minecraft translation project in Crowdin.",
+      "description": "Translator Cape edit The Translator Cape is given to proofreaders notable for their contribution.Chinese Translator Cape edit The Chinese Translator Cape was given to Powup333, Craft_Lawrence, and sjjklh for their contribution in Chinese.",
+      "details": "Both capes look identical when viewed from the back, only differing on their undersides. The Translator Cape depicts a pink T, whereas the Chinese Translator Cape depicts a Chinese flag, similar to the Japanese flag on the underside of cheapsh0t's Cape."
+    },
+    {
+      "id": "cape-37",
+      "name": "MINECON 2011 Cape",
+      "image": "minecon2011cape.png",
+      "releaseDate": "October 10, 2011",
+      "obtain": "The MINECON 2011 Cape is a cape which was obtainable by buying a ticket for MINECON 2011.",
+      "description": "Java Edition edit In Java Edition, this cape was given to users who bought a ticket for MINECON 2011 via their registered username.",
+      "details": "The cape depicts a creeper face on a red cloth background."
+    },
+    {
+      "id": "cape-38",
+      "name": "Snowman Cape",
+      "image": "snowmancape.png",
+      "releaseDate": "August 19, 2011",
+      "obtain": "The Snowman Cape is a personal cape.",
+      "description": "This cape was given to JulianClark as a reward for making a meme about how he brought Ray Cokes to Notch because of a joke splash text that was in Minecraft at the time.[1] Ray apparently is his godfather."
+    },
+    {
+      "id": "cape-39",
+      "name": "db Cape",
+      "image": "dbcape.png",
+      "releaseDate": "April 21, 2011",
+      "obtain": "The dB Cape or dannyBstyle's Cape is a personal cape.",
+      "description": "This cape was given to the video game music composer dannyBstyle as Notch was a fan of his music."
+    },
+    {
+      "id": "cape-40",
+      "name": "Millionth Customer Cape",
+      "image": "millionthcustomercape.png",
+      "releaseDate": "January 12, 2011",
+      "obtain": "The Millionth Customer Cape is a cape that was given to the player who purchased the millionth copy of Minecraft.",
+      "description": "This cape was given to akronman1, who purchased the 1,000,000th copy of the game on January 12, 2011."
+    },
+    {
+      "id": "cape-41",
+      "name": "Classic Mojang Cape",
+      "image": "classicmojangcape.png",
+      "releaseDate": "December 20, 2010",
+      "obtain": "The Mojang Cape and the Classic Mojang Cape are capes that were given to employees of Mojang before it rebranded into Mojang Studios.",
+      "description": "Neither of these capes were given out on Bedrock Edition.Classic Mojang Cape edit The Classic Mojang Cape was given to those employed by Mojang at any point between December 20, 2010 and October 7, 2015. This cape was also given out to Mojang employees on Xbox 360 Edition.Mojang Cape edit The Mojang Cape was given to those employed by Mojang at any point between October 7, 2015 and July 25, 2021."
+    }
+  ]
+}

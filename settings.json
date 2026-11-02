@@ -1,0 +1,9 @@
+{
+  "announcement": {
+    "enabled": false,
+    "text": ""
+  },
+  "showPlaceholders": false,
+  "discordUrl": "",
+  "paypalUrl": ""
+}

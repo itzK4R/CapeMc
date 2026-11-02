@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Admin — CapeMC</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        try {
+            var t = localStorage.getItem("capemc-theme") ||
+                (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            document.documentElement.dataset.theme = t;
+        } catch (e) {}
+    </script>
+    <style>
+        html, body { overflow-x: hidden; }
+        .admin-wrap { width: 100%; max-width: 760px; min-width: 0; }
+        #tabs { flex-wrap: wrap; gap: 0 2px; }
+        #tabs .profile-tab { padding: 9px 12px; white-space: nowrap; }
+        .admin-wrap input, .admin-wrap textarea, .admin-wrap select { max-width: 100%; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .stat { padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+        .stat strong { display: block; font-size: 24px; }
+        .stat span { color: var(--muted); font-size: 13px; }
+        .row-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .row-item .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+        .row-item small { display: block; color: var(--muted); font-size: 12px; }
+        .flag { color: #d19a00; font-size: 12px; }
+        .field { display: block; margin: 12px 0 4px; color: var(--muted); font-size: 13px; font-weight: 600; }
+        .admin-wrap textarea.admin-textarea { min-height: 70px; }
+        .admin-wrap .cm-search { margin-bottom: 0; }
+        .note { margin: 6px 0 12px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+        .panel { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
+        .inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; font-size: 14px; }
+        .ok { color: var(--ok); }
+        .danger { color: #d6336c; }
+    </style>
+</head>
+<body>
+    <header class="navbar" style="padding-left:5%">
+        <a href="index.html" class="logo">CAPE<span>MC</span> <span style="font-size:13px;font-weight:600;letter-spacing:0">admin</span></a>
+    </header>
+
+    <main class="page admin-wrap">
+        <div class="profile-tabs" id="tabs" role="tablist">
+            <button type="button" class="profile-tab active" data-tab="dashboard">Dashboard</button>
+            <button type="button" class="profile-tab" data-tab="capes">Capes</button>
+            <button type="button" class="profile-tab" data-tab="badges">Badges</button>
+            <button type="button" class="profile-tab" data-tab="settings">Settings</button>
+            <button type="button" class="profile-tab" data-tab="activity">Activity</button>
+        </div>
+        <p class="note" id="status" role="status">Loading your live files…</p>
+
+        <!-- DASHBOARD -->
+        <section id="tab-dashboard">
+            <div class="stat-grid" id="stats"></div>
+            <h2 class="home-label">Capes that need verifying</h2>
+            <div id="verifyList"></div>
+            <h2 class="home-label">Unlisted capes seen</h2>
+            <div id="unlistedList"><p class="note">Checking your database…</p></div>
+            <h2 class="home-label">Capes with a missing image</h2>
+            <div id="imageList"><p class="note">Checking images…</p></div>
+            <p class="note">Anything you change here only goes live after you upload the exported files to GitHub.</p>
+        </section>
+
+        <!-- CAPES -->
+        <section id="tab-capes" class="hidden">
+            <div class="inline">
+                <input type="search" id="capeSearch" class="cm-search" placeholder="Search capes..." style="flex:1;min-width:140px" aria-label="Search capes">
+                <button type="button" class="back-btn" id="capeNew" style="margin:0">Add cape</button>
+            </div>
+            <div id="capeList"></div>
+
+            <div class="panel hidden" id="capeEditor">
+                <h2 id="editorTitle" style="font-size:18px">Edit cape</h2>
+                <label class="field" for="cName">Name</label>
+                <input type="text" id="cName" class="cm-search">
+                <label class="field" for="cImage">Image file name (upload the file to your site)</label>
+                <input type="text" id="cImage" class="cm-search" placeholder="examplecape.png">
+                <label class="field" for="cDate">Release date</label>
+                <input type="text" id="cDate" class="cm-search" placeholder="May 17, 2024">
+                <label class="field" for="cObtain">How to obtain</label>
+                <textarea id="cObtain" class="admin-textarea"></textarea>
+                <label class="field" for="cDesc">Description</label>
+                <textarea id="cDesc" class="admin-textarea"></textarea>
+                <label class="field" for="cDetails">Additional information</label>
+                <textarea id="cDetails" class="admin-textarea"></textarea>
+                <label class="field" for="cHash">Texture hash (from "Unlisted capes seen" on the Dashboard)</label>
+                <input type="text" id="cHash" class="cm-search" placeholder="optional">
+                <label class="field" for="cOwners">Owners (optional number, shown on the site)</label>
+                <input type="number" id="cOwners" class="cm-search" min="0">
+                <div class="inline"><label><input type="checkbox" id="cPlaceholder"> Placeholder (hidden on the site)</label></div>
+                <div class="inline">
+                    <button type="button" class="back-btn" id="capeSave" style="margin:0">Save cape</button>
+                    <button type="button" class="back-btn" id="capeDelete" style="margin:0">Delete</button>
+                    <button type="button" class="back-btn" id="capeCancel" style="margin:0">Cancel</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 style="font-size:18px">Export</h2>
+                <p class="note">Upload both files to GitHub to publish your changes. The order of the list is the order shown on the site (newest first).</p>
+                <textarea id="capesOut" class="admin-textarea" rows="6" readonly></textarea>
+                <div class="inline">
+                    <button type="button" class="back-btn" data-copy="capesOut" style="margin:0">Copy capes.json</button>
+                    <button type="button" class="back-btn" data-download="capesOut" data-name="capes.json" style="margin:0">Download capes.json</button>
+                    <button type="button" class="back-btn" id="statsDownload" style="margin:0">Download cape-stats.json</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- BADGES -->
+        <section id="tab-badges" class="hidden">
+            <div class="panel" style="margin-top:0">
+                <h2 style="font-size:18px">Give or change badges</h2>
+                <p class="note">Enter a Java username, or a Bedrock XUID (numbers only). Saving a player who is already listed replaces their badges.</p>
+                <input type="text" id="who" class="cm-search" placeholder="Username or XUID" autocomplete="off" aria-label="Username or XUID">
+                <div class="inline">
+                    <label><input type="checkbox" value="dev"> Developer</label>
+                    <label><input type="checkbox" value="supporter"> Supporter</label>
+                    <label><input type="checkbox" value="contributor"> Contributor</label>
+                </div>
+                <div class="inline">
+                    <button type="button" class="back-btn" id="badgeSave" style="margin:0">Save player</button>
+                    <button type="button" class="back-btn" id="badgeClear" style="margin:0">Clear form</button>
+                </div>
+                <p class="note" id="badgeMsg" role="status"></p>
+            </div>
+
+            <div class="inline" style="margin-top:18px">
+                <input type="search" id="badgeSearch" class="cm-search" placeholder="Search players..." style="flex:1;min-width:140px" aria-label="Search players">
+                <select id="badgeFilter" class="cm-search" style="width:auto" aria-label="Filter by badge">
+                    <option value="">All badges</option>
+                    <option value="dev">Developer</option>
+                    <option value="supporter">Supporter</option>
+                    <option value="contributor">Contributor</option>
+                </select>
+            </div>
+            <div id="badgeList"></div>
+
+            <div class="panel">
+                <h2 style="font-size:18px">Export</h2>
+                <textarea id="badgesOut" class="admin-textarea" rows="6" readonly></textarea>
+                <div class="inline">
+                    <button type="button" class="back-btn" data-copy="badgesOut" style="margin:0">Copy badges.json</button>
+                    <button type="button" class="back-btn" data-download="badgesOut" data-name="badges.json" style="margin:0">Download badges.json</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="tab-settings" class="hidden">
+            <div class="panel" style="margin-top:0">
+                <h2 style="font-size:18px">Announcement banner</h2>
+                <div class="inline"><label><input type="checkbox" id="sAnnounceOn"> Show a banner at the top of every page</label></div>
+                <label class="field" for="sAnnounceText">Banner text</label>
+                <input type="text" id="sAnnounceText" class="cm-search" maxlength="160">
+            </div>
+            <div class="panel">
+                <h2 style="font-size:18px">Links and options</h2>
+                <label class="field" for="sDiscord">Discord invite link (optional, https only)</label>
+                <input type="url" id="sDiscord" class="cm-search" placeholder="https://discord.gg/...">
+                <label class="field" for="sPaypal">PayPal.me link (optional, no email address)</label>
+                <input type="url" id="sPaypal" class="cm-search" placeholder="https://www.paypal.me/YourName">
+                <div class="inline"><label><input type="checkbox" id="sPlaceholders"> Show placeholder capes on the site</label></div>
+            </div>
+            <div class="panel">
+                <h2 style="font-size:18px">Export</h2>
+                <textarea id="settingsOut" class="admin-textarea" rows="6" readonly></textarea>
+                <div class="inline">
+                    <button type="button" class="back-btn" data-copy="settingsOut" style="margin:0">Copy settings.json</button>
+                    <button type="button" class="back-btn" data-download="settingsOut" data-name="settings.json" style="margin:0">Download settings.json</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTIVITY -->
+        <section id="tab-activity" class="hidden">
+            <p class="note">This log is saved only in this browser. It records what you changed and exported here, not what visitors do.</p>
+            <div id="logList"></div>
+            <button type="button" class="back-btn" id="logClear" style="margin-top:14px">Clear log</button>
+        </section>
+    </main>
+
+    <script>
+    (function () {
+        const $ = id => document.getElementById(id);
+        const esc = text => String(text ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+        const BADGES = { dev: "Developer", supporter: "Supporter", contributor: "Contributor" };
+
+        const state = { capes: [], badges: [], stats: {}, settings: { announcement: { enabled: false, text: "" }, showPlaceholders: false, discordUrl: "", paypalUrl: "" } };
+        let editingId = null;
+        let editingBadge = null;
+        let dirty = false;
+        let missingImages = [];
+        let live = null;
+
+        // ---------- helpers ----------
+        function markDirty() { dirty = true; }
+        window.addEventListener("beforeunload", event => { if (dirty) { event.preventDefault(); event.returnValue = ""; } });
+
+        function say(text) { $("status").textContent = text; }
+
+        function readLog() { try { const list = JSON.parse(localStorage.getItem("capemc-admin-log")); return Array.isArray(list) ? list : []; } catch (e) { return []; } }
+        function log(text) {
+            try {
+                const list = readLog();
+                list.unshift({ time: Date.now(), text });
+                localStorage.setItem("capemc-admin-log", JSON.stringify(list.slice(0, 200)));
+            } catch (e) { /* log unavailable */ }
+            renderLog();
+        }
+
+        async function getJson(path) {
+            try { const response = await fetch(path, { cache: "no-store" }); return response.ok ? await response.json() : null; }
+            catch (e) { return null; }
+        }
+
+        async function copyText(text) {
+            try { await navigator.clipboard.writeText(text); return true; }
+            catch (e) { return false; }
+        }
+
+        function download(text, name) {
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+            link.download = name;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            log(`Exported ${name}`);
+        }
+
+        const needsVerify = cape => !cape.placeholder && /verify|confirm|requiring verification/i.test([cape.releaseDate, cape.obtain, cape.description, cape.details].join(" "));
+        const yearOf = cape => ((cape.releaseDate || "").match(/\b(?:19|20)\d{2}\b/) || [""])[0];
+
+        // ---------- tabs ----------
+        document.querySelectorAll("#tabs .profile-tab").forEach(tab => {
+            tab.addEventListener("click", () => openTab(tab.dataset.tab));
+        });
+
+        function openTab(name) {
+            document.querySelectorAll("#tabs .profile-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+            ["dashboard", "capes", "badges", "settings", "activity"].forEach(id => $(`tab-${id}`).classList.toggle("hidden", id !== name));
+            if (name === "dashboard") renderDashboard();
+        }
+
+        // ---------- dashboard ----------
+        function renderDashboard() {
+            const publicCapes = state.capes.filter(cape => !cape.placeholder);
+            const holders = type => state.badges.filter(player => (player.badges || []).includes(type)).length;
+            const cards = [
+                [publicCapes.length, "Capes on the site"],
+                [state.capes.length - publicCapes.length, "Placeholders (hidden)"],
+                [publicCapes.filter(needsVerify).length, "Need verifying"],
+                [missingImages.length, "Missing images"],
+                [state.badges.length, "Players with badges"],
+                [live ? live.players : "–", "Players tracked by the database"],
+                [Object.keys(state.stats).length, "Capes with owner counts"],
+                [holders("dev") + " / " + holders("supporter") + " / " + holders("contributor"), "Dev / Supporter / Contributor"]
+            ];
+
+            $("stats").innerHTML = cards.map(([value, label]) => `<div class="stat"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join("");
+
+            const verify = publicCapes.filter(needsVerify);
+            $("verifyList").innerHTML = verify.length
+                ? verify.slice(0, 15).map(cape => `<div class="row-item"><span class="grow">${esc(cape.name)}</span><button type="button" class="profile-copy" data-edit="${esc(cape.id)}">Edit</button></div>`).join("") + (verify.length > 15 ? `<p class="note">and ${verify.length - 15} more</p>` : "")
+                : `<p class="note ok">Everything is verified.</p>`;
+
+            renderUnlisted();
+
+            $("imageList").innerHTML = missingImages.length
+                ? missingImages.slice(0, 15).map(cape => `<div class="row-item"><span class="grow">${esc(cape.name)}<small>${esc(cape.image)}</small></span><button type="button" class="profile-copy" data-edit="${esc(cape.id)}">Edit</button></div>`).join("")
+                : `<p class="note">No missing images found.</p>`;
+        }
+
+
+        function drawCapeTile(canvas, hash) {
+            const ctx = canvas.getContext("2d");
+            ctx.imageSmoothingEnabled = false;
+            const image = new Image();
+            image.onload = () => { const k = image.width / 64; ctx.drawImage(image, k, k, 10 * k, 16 * k, 0, 0, 10, 16); };
+            image.src = `https://textures.minecraft.net/texture/${hash}`;
+        }
+
+        function renderUnlisted() {
+            const box = $("unlistedList");
+
+            if (!live) {
+                box.innerHTML = `<p class="note">The database isn't connected yet (or you're not on your live site). Nothing to show.</p>`;
+                return;
+            }
+
+            const known = new Set(state.capes.map(cape => cape.hash).filter(Boolean));
+            const rows = Object.entries(live.owners || {}).filter(([hash]) => !known.has(hash));
+
+            box.innerHTML = rows.length
+                ? rows.slice(0, 20).map(([hash, count]) => `
+                    <div class="row-item">
+                        <canvas width="10" height="16" data-hash="${esc(hash)}" style="width:30px;height:48px;image-rendering:pixelated;background:var(--soft);border-radius:4px"></canvas>
+                        <span class="grow">${esc(Number(count).toLocaleString())} players<small>${esc(hash)}</small></span>
+                        <button type="button" class="profile-copy" data-addhash="${esc(hash)}">Add as cape</button>
+                    </div>`).join("")
+                : `<p class="note ok">No unlisted capes. Every cape seen is already matched.</p>`;
+
+            box.querySelectorAll("canvas[data-hash]").forEach(canvas => drawCapeTile(canvas, canvas.dataset.hash));
+        }
+
+        function checkImages() {
+            const withImages = state.capes.filter(cape => !cape.placeholder && cape.image);
+            missingImages = state.capes.filter(cape => !cape.placeholder && !cape.image);
+            let pending = withImages.length;
+
+            if (!pending) { renderDashboard(); return; }
+
+            withImages.forEach(cape => {
+                const image = new Image();
+                image.onload = () => { if (--pending === 0) renderDashboard(); };
+                image.onerror = () => { missingImages.push(cape); if (--pending === 0) renderDashboard(); };
+                image.src = cape.image;
+            });
+        }
+
+        document.addEventListener("click", event => {
+            const edit = event.target.closest("[data-edit]");
+            if (edit) { openTab("capes"); openEditor(edit.dataset.edit); }
+
+            const addHash = event.target.closest("[data-addhash]");
+            if (addHash) { openTab("capes"); openEditor(null, addHash.dataset.addhash); }
+
+            const copy = event.target.closest("[data-copy]");
+            if (copy) {
+                copyText($(copy.dataset.copy).value).then(ok => {
+                    say(ok ? "Copied." : "Select the text and copy it manually.");
+                    if (ok) log(`Copied ${copy.dataset.copy.replace("Out", "")} file`);
+                });
+            }
+
+            const dl = event.target.closest("[data-download]");
+            if (dl) download($(dl.dataset.download).value, dl.dataset.name);
+        });
+
+        // ---------- capes ----------
+        function renderCapes() {
+            const query = $("capeSearch").value.trim().toLowerCase();
+
+            $("capeList").innerHTML = state.capes.map((cape, index) => ({ cape, index }))
+                .filter(({ cape }) => !query || cape.name.toLowerCase().includes(query))
+                .map(({ cape, index }) => `
+                    <div class="row-item">
+                        <span class="grow">${esc(cape.name)}
+                            <small>${esc(yearOf(cape) || cape.releaseDate || "no date")}${needsVerify(cape) ? ' · <span class="flag">needs verifying</span>' : ""}${cape.placeholder ? " · hidden" : ""}${state.stats[cape.id] != null ? " · " + esc(Number(state.stats[cape.id]).toLocaleString()) + " owners" : ""}</small>
+                        </span>
+                        <button type="button" class="profile-copy" data-move="${index}" data-dir="-1" aria-label="Move up">↑</button>
+                        <button type="button" class="profile-copy" data-move="${index}" data-dir="1" aria-label="Move down">↓</button>
+                        <button type="button" class="profile-copy" data-edit="${esc(cape.id)}">Edit</button>
+                    </div>`).join("") || `<p class="note">No capes found.</p>`;
+
+            $("capesOut").value = JSON.stringify({ capes: state.capes }, null, 2);
+        }
+
+        $("capeSearch").addEventListener("input", renderCapes);
+
+        $("capeList").addEventListener("click", event => {
+            const move = event.target.closest("[data-move]");
+            if (!move) return;
+
+            const index = Number(move.dataset.move);
+            const target = index + Number(move.dataset.dir);
+
+            if (target < 0 || target >= state.capes.length) return;
+
+            [state.capes[index], state.capes[target]] = [state.capes[target], state.capes[index]];
+            markDirty();
+            log(`Moved ${state.capes[target].name}`);
+            renderCapes();
+        });
+
+        function openEditor(id, presetHash) {
+            const cape = state.capes.find(item => item.id === id) || { id: null, hash: presetHash || "", name: "", image: "", releaseDate: "", obtain: "", description: "", details: "" };
+            editingId = cape.id;
+
+            $("editorTitle").textContent = cape.id ? `Edit: ${cape.name}` : "New cape";
+            $("cName").value = cape.name;
+            $("cImage").value = cape.image || "";
+            $("cDate").value = cape.releaseDate || "";
+            $("cObtain").value = cape.obtain || "";
+            $("cDesc").value = cape.description || "";
+            $("cDetails").value = cape.details || "";
+            $("cHash").value = cape.hash || "";
+            $("cOwners").value = cape.id && state.stats[cape.id] != null ? state.stats[cape.id] : "";
+            $("cPlaceholder").checked = !!cape.placeholder;
+            $("capeDelete").classList.toggle("hidden", !cape.id);
+            $("capeEditor").classList.remove("hidden");
+            $("capeEditor").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        $("capeNew").addEventListener("click", () => openEditor(null));
+        $("capeCancel").addEventListener("click", () => $("capeEditor").classList.add("hidden"));
+
+        $("capeSave").addEventListener("click", () => {
+            const name = $("cName").value.trim();
+
+            if (!name) { say("A cape needs a name."); return; }
+
+            let cape = state.capes.find(item => item.id === editingId);
+            const isNew = !cape;
+
+            if (isNew) {
+                const next = Math.max(0, ...state.capes.map(item => Number((item.id.match(/\d+$/) || [0])[0]))) + 1;
+                cape = { id: `cape-${next}` };
+                state.capes.unshift(cape);
+            }
+
+            Object.assign(cape, {
+                name,
+                image: $("cImage").value.trim(),
+                releaseDate: $("cDate").value.trim(),
+                obtain: $("cObtain").value.trim(),
+                description: $("cDesc").value.trim(),
+                details: $("cDetails").value.trim()
+            });
+
+            const hash = $("cHash").value.trim().toLowerCase();
+            if (/^[0-9a-f]{20,}$/.test(hash)) cape.hash = hash; else delete cape.hash;
+
+            if ($("cPlaceholder").checked) cape.placeholder = true; else delete cape.placeholder;
+
+            const owners = $("cOwners").value;
+            if (owners === "") delete state.stats[cape.id]; else state.stats[cape.id] = Number(owners);
+
+            markDirty();
+            log(`${isNew ? "Added" : "Updated"} cape: ${name}`);
+            say(`${isNew ? "Added" : "Saved"} ${name}.`);
+            $("capeEditor").classList.add("hidden");
+            renderCapes();
+        });
+
+        $("capeDelete").addEventListener("click", () => {
+            const cape = state.capes.find(item => item.id === editingId);
+
+            if (!cape || !confirm(`Delete ${cape.name}? This can't be undone once you upload.`)) return;
+
+            state.capes = state.capes.filter(item => item !== cape);
+            delete state.stats[cape.id];
+            markDirty();
+            log(`Deleted cape: ${cape.name}`);
+            $("capeEditor").classList.add("hidden");
+            renderCapes();
+        });
+
+        $("statsDownload").addEventListener("click", () => download(JSON.stringify({ owners: state.stats }, null, 2), "cape-stats.json"));
+
+        // ---------- badges ----------
+        const normId = id => String(id).replace(/-/g, "").toLowerCase();
+
+        async function lookupUuid(name) {
+            try {
+                const response = await fetch(`https://mc-api.io/profile/${encodeURIComponent(name)}/JAVA`);
+                if (response.ok) { const data = await response.json(); if (data.uuid) return { id: normId(data.uuid), name: data.name }; }
+            } catch (e) { /* try the backup */ }
+
+            try {
+                const response = await fetch("https://playerdb.co/api/player/minecraft/" + encodeURIComponent(name));
+                const player = (await response.json())?.data?.player;
+                if (player) return { id: normId(player.raw_id || player.id), name: player.username };
+            } catch (e) { /* not found */ }
+
+            return null;
+        }
+
+        function renderBadges() {
+            const query = $("badgeSearch").value.trim().toLowerCase();
+            const filter = $("badgeFilter").value;
+
+            $("badgeList").innerHTML = state.badges
+                .filter(player => (!query || (player.name || player.id).toLowerCase().includes(query)) && (!filter || (player.badges || []).includes(filter)))
+                .map(player => `
+                    <div class="row-item">
+                        <span class="grow">${esc(player.name || player.id)}<small>${esc((player.badges || []).map(type => BADGES[type] || type).join(", "))}</small></span>
+                        <button type="button" class="profile-copy" data-bedit="${esc(player.id)}">Edit</button>
+                        <button type="button" class="profile-copy" data-bremove="${esc(player.id)}">Remove</button>
+                    </div>`).join("") || `<p class="note">No players found.</p>`;
+
+            $("badgesOut").value = JSON.stringify({ players: state.badges }, null, 2);
+        }
+
+        $("badgeSearch").addEventListener("input", renderBadges);
+        $("badgeFilter").addEventListener("change", renderBadges);
+
+        function clearBadgeForm() {
+            $("who").value = "";
+            document.querySelectorAll('#tab-badges input[type="checkbox"]').forEach(box => { box.checked = false; });
+            editingBadge = null;
+        }
+
+        $("badgeClear").addEventListener("click", clearBadgeForm);
+
+        $("badgeList").addEventListener("click", event => {
+            const edit = event.target.closest("[data-bedit]");
+            const remove = event.target.closest("[data-bremove]");
+
+            if (edit) {
+                const player = state.badges.find(item => item.id === edit.dataset.bedit);
+                if (!player) return;
+                editingBadge = player.id;
+                $("who").value = player.name || player.id;
+                document.querySelectorAll('#tab-badges input[type="checkbox"]').forEach(box => { box.checked = (player.badges || []).includes(box.value); });
+                $("who").scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+
+            if (remove) {
+                const player = state.badges.find(item => item.id === remove.dataset.bremove);
+                if (!player || !confirm(`Remove ${player.name || player.id} from the badge list?`)) return;
+                state.badges = state.badges.filter(item => item !== player);
+                markDirty();
+                log(`Removed badges from ${player.name || player.id}`);
+                renderBadges();
+            }
+        });
+
+        $("badgeSave").addEventListener("click", async () => {
+            const who = $("who").value.trim();
+            const badges = [...document.querySelectorAll('#tab-badges input[type="checkbox"]:checked')].map(box => box.value);
+            const say2 = text => { $("badgeMsg").textContent = text; };
+
+            if (!who) return say2("Enter a username or XUID.");
+            if (!badges.length) return say2("Tick at least one badge (or use Remove in the list).");
+
+            let id = who;
+            let name = who;
+
+            if (editingBadge && state.badges.find(item => item.id === editingBadge)?.name?.toLowerCase() === who.toLowerCase()) {
+                id = editingBadge;
+                name = who;
+            } else if (!/^\d{10,}$/.test(who)) {
+                say2("Looking up player…");
+                const found = await lookupUuid(who);
+                if (!found) return say2(`No Java player found for “${who}”.`);
+                id = found.id;
+                name = found.name;
+            }
+
+            id = normId(id);
+            state.badges = state.badges.filter(item => normId(item.id) !== id);
+            state.badges.push({ id, name, badges });
+            markDirty();
+            log(`Set badges for ${name}: ${badges.map(type => BADGES[type]).join(", ")}`);
+            say2(`Saved ${name}.`);
+            clearBadgeForm();
+            renderBadges();
+        });
+
+        // ---------- settings ----------
+        const httpsOrEmpty = value => value === "" || /^https:\/\//.test(value);
+
+        function readSettings() {
+            const settings = {
+                announcement: { enabled: $("sAnnounceOn").checked, text: $("sAnnounceText").value.trim() },
+                showPlaceholders: $("sPlaceholders").checked,
+                discordUrl: $("sDiscord").value.trim(),
+                paypalUrl: $("sPaypal").value.trim()
+            };
+            if (!httpsOrEmpty(settings.discordUrl)) settings.discordUrl = "";
+            if (!httpsOrEmpty(settings.paypalUrl)) settings.paypalUrl = "";
+            return settings;
+        }
+
+        function fillSettings() {
+            const s = state.settings;
+            $("sAnnounceOn").checked = !!(s.announcement && s.announcement.enabled);
+            $("sAnnounceText").value = (s.announcement && s.announcement.text) || "";
+            $("sPlaceholders").checked = !!s.showPlaceholders;
+            $("sDiscord").value = s.discordUrl || "";
+            $("sPaypal").value = s.paypalUrl || "";
+            $("settingsOut").value = JSON.stringify(s, null, 2);
+        }
+
+        ["sAnnounceOn", "sAnnounceText", "sPlaceholders", "sDiscord", "sPaypal"].forEach(id => {
+            $(id).addEventListener("input", () => {
+                state.settings = readSettings();
+                $("settingsOut").value = JSON.stringify(state.settings, null, 2);
+                markDirty();
+            });
+        });
+
+        // ---------- activity ----------
+        function renderLog() {
+            const list = readLog();
+            $("logList").innerHTML = list.length
+                ? list.map(entry => `<div class="row-item"><span class="grow">${esc(entry.text)}<small>${esc(new Date(entry.time).toLocaleString())}</small></span></div>`).join("")
+                : `<p class="note">Nothing logged yet.</p>`;
+        }
+
+        $("logClear").addEventListener("click", () => {
+            if (!confirm("Clear the activity log on this device?")) return;
+            try { localStorage.removeItem("capemc-admin-log"); } catch (e) { /* ignore */ }
+            renderLog();
+        });
+
+        // ---------- start ----------
+        (async function start() {
+            const [capes, badges, stats, settings, liveStats] = await Promise.all([
+                getJson("capes.json"), getJson("badges.json"), getJson("cape-stats.json"), getJson("settings.json"), getJson("/api/capes/stats")
+            ]);
+
+            live = liveStats && liveStats.owners ? liveStats : null;
+
+            state.capes = Array.isArray(capes?.capes) ? capes.capes : [];
+            state.badges = Array.isArray(badges?.players) ? badges.players : [];
+            state.stats = stats?.owners && typeof stats.owners === "object" ? stats.owners : {};
+            if (settings && typeof settings === "object") state.settings = Object.assign(state.settings, settings);
+
+            say(capes
+                ? `Loaded ${state.capes.length} capes, ${state.badges.length} badge holders. Edit, then export and upload the files.`
+                : "Couldn't load capes.json. Upload it to your site first, then reload this page.");
+
+            fillSettings();
+            renderCapes();
+            renderBadges();
+            renderLog();
+            checkImages();
+            log("Opened the admin page");
+        })();
+    })();
+    </script>
+</body>
+</html>

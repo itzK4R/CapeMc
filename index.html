@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="description" content="Explore Minecraft cape history with CapeMC, a community-made cape archive.">
+
+    <!-- ADDED: social preview tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="CapeMC">
+    <meta property="og:title" content="CapeMC — Minecraft Cape Archive">
+    <meta property="og:description" content="Explore Minecraft cape history with CapeMC, a community-made cape archive.">
+    <meta name="twitter:card" content="summary">
+
+    <!-- ADDED: favicon (swap for your own file any time) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23202020'/%3E%3Ctext x='16' y='23' font-family='Arial' font-size='20' font-weight='800' text-anchor='middle' fill='%23fff'%3EC%3C/text%3E%3C/svg%3E">
+
+    <title>CapeMC — Minecraft Cape Archive</title>
+
+    <!-- ADDED: applies the saved theme before the page paints (no flash) -->
+    <script>
+        try {
+            var t = localStorage.getItem("capemc-theme") ||
+                (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            document.documentElement.dataset.theme = t;
+        } catch (e) {}
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="navbar">
+        <!-- FIXED: real hash instead of "#" so it never jumps/blanks the URL -->
+        <a href="#home" class="logo" id="homeLogo" aria-label="CapeMC Home">
+            CAPE<span>MC</span>
+        </a>
+
+        <nav class="nav-links" aria-label="Main navigation">
+            <button class="nav-btn active" data-page="home" type="button" aria-current="page">Home</button>
+            <button class="nav-btn" data-page="capes" type="button">Capes</button>
+            <button class="nav-btn" data-page="players" type="button">Players</button>
+            <button class="nav-btn" data-page="tools" type="button">Tools</button>
+            <button class="nav-btn" data-page="about" type="button">About</button>
+        </nav>
+    </header>
+
+    <main id="main">
+        <!-- FIXED: Home was an empty section (only the search bar showed) -->
+        <section id="home" class="page" aria-label="Home">
+            <header class="page-heading">
+                <h1>CapeMC</h1>
+                <p>A community-made archive of Minecraft capes.</p>
+                <p class="home-stats" id="homeStats" hidden></p>
+            </header>
+
+            <h2 class="home-label">Latest capes</h2>
+            <div class="cape-grid home-grid" id="homeGrid"></div>
+
+            <button type="button" class="back-btn home-more" data-go="capes">
+                View all capes →
+            </button>
+        </section>
+
+        <section id="capes" class="page hidden" aria-label="Capes">
+            <header class="page-heading">
+                <h1>Official Capes</h1>
+                <p>Explore the history of Minecraft capes.</p>
+            </header>
+
+            <div class="cape-grid" id="capeGrid"></div>
+        </section>
+
+        <!-- ADDED: Bedrock player lookup -->
+        <section id="players" class="page hidden" aria-label="Players">
+            <header class="page-heading">
+                <h1>Player Lookup</h1>
+                <p>Look up a Java username or Bedrock gamertag.</p>
+            </header>
+
+            <form class="player-form" id="playerForm">
+                <input type="search" id="playerInput" class="cm-search"
+                       placeholder="Username or gamertag..." maxlength="16"
+                       autocomplete="off" aria-label="Java username or Bedrock gamertag">
+                <button type="submit" class="back-btn">Look up</button>
+            </form>
+
+            <div id="playerResult" aria-live="polite"></div>
+        </section>
+
+        <section id="capeDetails" class="page hidden" aria-label="Cape details">
+            <button type="button" id="backToCapes" class="back-btn">
+                ← Back to Capes
+            </button>
+
+            <div id="capeDetailContent"></div>
+        </section>
+
+        <!-- ADDED: Minecraft tools -->
+        <section id="tools" class="page hidden" aria-label="Tools">
+            <header class="page-heading">
+                <h1>Minecraft Tools</h1>
+                <p>Free generators and editors.</p>
+            </header>
+
+            <div class="profile-tabs" id="toolTabs" role="tablist">
+                <button type="button" class="profile-tab active" data-tool="gradient" role="tab" aria-selected="true">Gradient</button>
+                <button type="button" class="profile-tab" data-tool="skin" role="tab" aria-selected="false">Skin editor</button>
+            </div>
+
+            <div class="tool" id="tool-gradient">
+                <label class="tool-label" for="gradText">Text</label>
+                <input type="text" id="gradText" class="cm-search" value="CapeMC" maxlength="64" autocomplete="off">
+
+                <span class="tool-label">Colors</span>
+                <div class="tool-row" id="gradColors">
+                    <input type="color" value="#7f5af0" aria-label="Color 1">
+                    <input type="color" value="#2cb67d" aria-label="Color 2">
+                </div>
+                <div class="tool-row">
+                    <button type="button" class="profile-copy" id="gradAdd">+ Add color</button>
+                    <button type="button" class="profile-copy" id="gradRemove">− Remove color</button>
+                </div>
+
+                <label class="tool-label" for="gradFormat">Format</label>
+                <select id="gradFormat" class="cm-search">
+                    <option value="hash">&amp;#RRGGBB (most plugins)</option>
+                    <option value="x">&amp;x&amp;R&amp;R&amp;G&amp;G&amp;B&amp;B (Spigot)</option>
+                    <option value="mini">MiniMessage</option>
+                </select>
+
+                <div class="tool-row">
+                    <label><input type="checkbox" id="gradBold"> Bold</label>
+                    <label><input type="checkbox" id="gradItalic"> Italic</label>
+                </div>
+
+                <span class="tool-label">Preview</span>
+                <div class="gradient-preview" id="gradPreview" aria-live="polite"></div>
+
+                <label class="tool-label" for="gradOutput">Result</label>
+                <textarea id="gradOutput" class="admin-textarea" rows="4" readonly></textarea>
+                <button type="button" class="back-btn" id="gradCopy">Copy</button>
+            </div>
+
+            <div class="tool hidden" id="tool-skin">
+                <div class="skin-editor">
+                    <div class="skin-editor-main">
+                        <div class="skin-canvas-wrap">
+                            <canvas id="skinCanvas" width="64" height="64"></canvas>
+                            <canvas id="skinGuides" width="512" height="512"></canvas>
+                        </div>
+
+                        <div class="tool-row">
+                            <input type="color" id="skinColor" value="#7f5af0" aria-label="Paint color">
+                            <button type="button" class="profile-copy" data-skin-tool="pencil" aria-pressed="true">Pencil</button>
+                            <button type="button" class="profile-copy" data-skin-tool="eraser" aria-pressed="false">Eraser</button>
+                            <button type="button" class="profile-copy" data-skin-tool="picker" aria-pressed="false">Picker</button>
+                            <button type="button" class="profile-copy" id="skinUndo">Undo</button>
+                            <label><input type="checkbox" id="skinGuideToggle" checked> Guides</label>
+                        </div>
+
+                        <div class="tool-row">
+                            <input type="text" id="skinUser" class="cm-search" placeholder="Load a Java username..." maxlength="16" autocomplete="off" aria-label="Java username to load">
+                            <button type="button" class="profile-copy" id="skinLoadUser">Load</button>
+                        </div>
+                        <div class="tool-row">
+                            <label class="profile-copy file-btn">Upload PNG<input type="file" id="skinFile" accept="image/png" hidden></label>
+                            <button type="button" class="profile-copy" id="skinClear">Clear</button>
+                            <button type="button" class="back-btn" id="skinDownload">Download PNG</button>
+                        </div>
+                        <p class="player-message" id="skinMsg" role="status"></p>
+                    </div>
+
+                    <div class="skin-editor-preview">
+                        <canvas id="skinPreview" aria-label="3D preview of your skin"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="page hidden" aria-label="About">
+            <header class="page-heading">
+                <h1>About CapeMC</h1>
+                <p>Every cape has a story.</p>
+            </header>
+
+            <div class="cape-detail-section">
+                <h2>What Is CapeMC?</h2>
+                <p>
+                    CapeMC is a community-made project dedicated to documenting
+                    Minecraft capes in one organized place. Discover official
+                    capes, explore their designs, learn about their history,
+                    and find out how they were distributed.
+                </p>
+            </div>
+
+            <div class="cape-detail-section">
+                <h2>Our Mission</h2>
+                <p>
+                    Our mission is to preserve Minecraft cape history and make
+                    information about every cape easier to find and understand.
+                    We aim to create a reliable and accessible archive for
+                    everyone interested in Minecraft capes.
+                </p>
+            </div>
+
+            <div class="cape-detail-section">
+                <h2>Meet the Team</h2>
+
+                <h3>Founder &amp; Developer</h3>
+                <p><strong>K4R</strong></p>
+                <p>
+                    Founded CapeMC and is responsible for the original concept,
+                    website development, design, and overall direction of
+                    the project.
+                </p>
+
+                <h3>Helper</h3>
+                <p><strong>yousef</strong></p>
+                <p>
+                    Assists with development, website maintenance, Discord
+                    server management, and supporting the CapeMC community.
+                </p>
+            </div>
+
+            <div class="cape-detail-section">
+                <h2>Independent Fan Project</h2>
+                <p>
+                    CapeMC is an independent fan-made project. It is not
+                    affiliated with, endorsed by, sponsored by, or officially
+                    connected to Mojang Studios, Microsoft, or Xbox.
+                    Minecraft, its name, capes, skins, and related assets
+                    are the property of their respective owners.
+                    CapeMC does not claim ownership of any official
+                    Minecraft assets displayed on this website.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <button type="button" data-go="about">About</button>
+            <a href="https://discord.gg/Zr6xneyRKj" target="_blank" rel="noopener noreferrer">Discord</a>
+            <button type="button" data-go="tools">Tools</button>
+            <button type="button" id="footerDonate">Donate</button>
+        </div>
+        <p>CapeMC is an independent fan project and is not affiliated with Mojang Studios or Microsoft.</p>
+    </footer>
+
+    <!-- ADDED: shown only if JavaScript is off -->
+    <noscript>
+        <p class="noscript-msg">CapeMC needs JavaScript to display the cape archive.</p>
+    </noscript>
+
+    <!-- ADDED: 3D skin viewer library (pinned version) -->
+    <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.4.2/bundles/skinview3d.bundle.js" defer></script>
+    <script src="script.js" defer></script>
+</body>
+</html>
