@@ -10,6 +10,9 @@ let capes = [];
 let publicCapes = [];
 let siteSettings = {};
 
+// Tool pages: #tools/<name> opens the page with this id.
+const TOOL_PAGES = { gradient: "toolGradient", skin: "toolSkin", chibi: "toolChibi", banner: "toolBanner", skinart: "toolSkinArt" };
+
 
 // ========================================
 // SETTINGS (ADDED)
@@ -25,6 +28,13 @@ const PAGE_TITLES = {
     about: "About — CapeMC",
     players: "Players — CapeMC",
     tools: "Tools — CapeMC",
+    skinDetail: "Skin — CapeMC",
+    servers: "Servers — CapeMC",
+    toolGradient: "Gradient Generator — CapeMC",
+    toolSkin: "Skin Editor — CapeMC",
+    toolChibi: "Chibi Maker — CapeMC",
+    toolBanner: "Banner Designer — CapeMC",
+    toolSkinArt: "Skin Art Maker — CapeMC",
     capeDetails: "CapeMC"
 };
 
@@ -44,6 +54,26 @@ async function loadSiteData() {
     ]);
 
     capes = Array.isArray(capeData?.capes) ? capeData.capes : (Array.isArray(capeData) ? capeData : []);
+
+    // A cape doesn't need an "id". If it has none, one is made from its name
+    // (Aurora Cape becomes "aurora-cape"), so you can just add capes.
+    const slug = text => String(text || "cape").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "cape";
+    const used = new Set(capes.filter(cape => cape && cape.id).map(cape => cape.id));
+
+    capes = capes.filter(cape => cape && typeof cape === "object" && cape.name);
+
+    capes.forEach(cape => {
+        if (cape.id) return;
+
+        const base = slug(cape.name);
+        let id = base;
+        let count = 2;
+
+        while (used.has(id)) id = `${base}-${count++}`;
+
+        cape.id = id;
+        used.add(id);
+    });
     siteSettings = settings && typeof settings === "object" ? settings : {};
 
     const showPlaceholders = SHOW_PLACEHOLDERS || siteSettings.showPlaceholders === true;
@@ -95,6 +125,8 @@ sidebar.innerHTML = `
                 type="button">Capes</button>
         <button class="cm-side-link" data-page="players"
                 type="button">Players</button>
+        <button class="cm-side-link" data-page="servers"
+                type="button">Servers</button>
         <button class="cm-side-link" data-page="tools"
                 type="button">Tools</button>
         <button class="cm-side-link" data-page="about"
@@ -234,7 +266,11 @@ function showPage(pageName, options = {}) {
     const focus = options.focus !== false;
 
     // FIXED: the Capes tab stays highlighted while viewing a cape.
-    const navKey = pageName === "capeDetails" ? "capes" : pageName;
+    const navKey = pageName === "capeDetails"
+        ? "capes"
+        : pageName === "skinDetail"
+            ? "players"
+            : (/^tool[A-Z]/.test(pageName) ? "tools" : pageName);
 
     pages.forEach(page => {
         page.classList.toggle("hidden", page.id !== pageName);
@@ -259,11 +295,9 @@ function showPage(pageName, options = {}) {
         capesSearch.wrapper.classList.toggle("visible", pageName === "capes");
     }
 
+    // FIXED: the sidebar search used to hide on Tools, About and other pages.
     if (sidebarSearch) {
-        sidebarSearch.classList.toggle(
-            "visible",
-            pageName === "home" || pageName === "capes"
-        );
+        sidebarSearch.classList.add("visible");
     }
 
     // ADDED: tab title changes per page (cape pages set their own).
@@ -313,8 +347,31 @@ function route(options = {}) {
         return;
     }
 
-    const pageName = ["home", "capes", "players", "tools", "about"].includes(hash) ? hash : "home";
+    if (hash.startsWith("skin/")) {
+        const skinHash = hash.slice(5).toLowerCase();
+
+        if (/^[0-9a-f]{16,64}$/.test(skinHash)) {
+            showPage("skinDetail", { ...options, focus: false });
+            openSkin(skinHash);
+            return;
+        }
+    }
+
+    if (hash.startsWith("tools/")) {
+        const toolPage = TOOL_PAGES[hash.slice(6)];
+
+        if (toolPage) {
+            showPage(toolPage, options);
+            if (toolPage === "toolSkin") startEditorViewer();
+            return;
+        }
+    }
+
+    const pageName = ["home", "capes", "players", "servers", "tools", "about"].includes(hash) ? hash : "home";
     showPage(pageName, options);
+
+    if (pageName === "servers") refreshServerStatuses(false);
+    if (pageName === "players") refreshPlayerSkins();
 }
 
 function go(hash) {
@@ -1857,6 +1914,7 @@ async function fetchJavaProfile(name) {
             status: "found",
             cachedAt: doc.cachedAt || null,
             textures: mcApiTextures(doc),
+            apiNames: doc.names,
             player: {
                 username: doc.name,
                 id: doc.uuid,
@@ -1946,16 +2004,60 @@ function formatDate(ms) {
     });
 }
 
+// Name order: dated changes newest first, then undated ones, then the original name.
+function nameRank(entry) {
+    if (entry.timestamp === 0) return -2;
+    if (typeof entry.timestamp !== "number") return -1;
+    return entry.timestamp;
+}
+
+// Shows the first few rows and tucks the rest behind a "Show more" button.
+function limitList(container, nodes, limit, noun) {
+    nodes.forEach((node, index) => {
+        if (index >= limit) node.classList.add("hidden");
+        container.appendChild(node);
+    });
+
+    if (nodes.length <= limit) return null;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hist-more";
+    button.textContent = `Show ${nodes.length - limit} more ${noun}`;
+
+    let open = false;
+
+    button.addEventListener("click", () => {
+        open = !open;
+        nodes.slice(limit).forEach(node => node.classList.toggle("hidden", !open));
+        button.textContent = open ? "Show less" : `Show ${nodes.length - limit} more ${noun}`;
+    });
+
+    return button;
+}
+
+function historyHeading(title, count) {
+    const head = document.createElement("div");
+    head.className = "hist-head";
+
+    const text = document.createElement("span");
+    text.className = "hist-title";
+    text.textContent = title;
+
+    const pill = document.createElement("span");
+    pill.className = "pill";
+    pill.textContent = count;
+
+    head.append(text, pill);
+    return head;
+}
+
 function buildHistoryPanel(java) {
     const panel = document.createElement("div");
+
     const names = [...(java.nameHistory || [])]
         .filter(entry => entry && typeof entry.username === "string")
-        .sort((x, y) => {
-            // The original name has timestamp 0, so it goes last.
-            if (!x.timestamp) return 1;
-            if (!y.timestamp) return -1;
-            return y.timestamp - x.timestamp;
-        });
+        .sort((x, y) => nameRank(y) - nameRank(x));
     const skins = [...(java.skinHistory || [])]
         .filter(entry => entry && skinSource(entry.texture))
         .sort((x, y) => (y.timestamp || 0) - (x.timestamp || 0));
@@ -1963,42 +2065,65 @@ function buildHistoryPanel(java) {
     if (!names.length && !skins.length) {
         const empty = document.createElement("p");
         empty.className = "player-message";
-        empty.textContent = "No history found for this player.";
+        empty.textContent = "No history found for this player yet. CapeMC starts recording the first time it sees them.";
         panel.appendChild(empty);
         return panel;
     }
 
     if (names.length) {
-        const heading = document.createElement("span");
-        heading.className = "tool-label";
-        heading.textContent = `Name history (${names.length})`;
-        panel.appendChild(heading);
+        panel.appendChild(historyHeading("Names", names.length));
 
-        names.forEach(entry => {
-            const row = document.createElement("div");
-            row.className = "history-row";
+        const timeline = document.createElement("div");
+        timeline.className = "timeline";
+
+        const items = names.map((entry, index) => {
+            const item = document.createElement("div");
+            item.className = "timeline-item";
+
+            const dot = document.createElement("span");
+            dot.className = index === 0 ? "timeline-dot current" : "timeline-dot";
+
+            const main = document.createElement("div");
+            main.className = "timeline-main";
 
             const name = document.createElement("strong");
             name.textContent = entry.username;
+            main.appendChild(name);
+
+            [[index === 0, "Current"], [entry.timestamp === 0, "Original"]].forEach(([show, label]) => {
+                if (!show) return;
+
+                const pill = document.createElement("span");
+                pill.className = "pill";
+                pill.textContent = label;
+                main.appendChild(pill);
+            });
 
             const date = document.createElement("span");
-            date.textContent = entry.timestamp ? `${entry.tracked ? "Seen " : ""}${formatDate(entry.timestamp)}` : "Original name";
+            date.className = "timeline-date";
 
-            row.append(name, date);
-            panel.appendChild(row);
+            if (typeof entry.timestamp === "number" && entry.timestamp > 0) {
+                date.textContent = `${entry.tracked ? "Seen " : entry.approx ? "About " : ""}${formatDate(entry.timestamp)}`;
+            } else if (entry.timestamp !== 0) {
+                date.textContent = "Date unknown";
+            }
+
+            item.append(dot, main, date);
+            return item;
         });
+
+        const more = limitList(timeline, items, 8, "names");
+        panel.appendChild(timeline);
+        if (more) panel.appendChild(more);
     }
 
     if (skins.length) {
-        const heading = document.createElement("span");
-        heading.className = "tool-label";
-        heading.textContent = `Skin history (${skins.length})`;
-        panel.appendChild(heading);
+        panel.appendChild(historyHeading("Skins", skins.length));
 
         const grid = document.createElement("div");
         grid.className = "skin-history";
 
-        skins.slice(0, 30).forEach(entry => {
+        const cards = skins.map((entry, index) => {
             const card = document.createElement("div");
             card.className = "skin-card";
 
@@ -2013,22 +2138,25 @@ function buildHistoryPanel(java) {
             date.textContent = entry.timestamp ? formatDate(entry.timestamp) : "Unknown date";
 
             card.append(canvas, date);
-            grid.appendChild(card);
+
+            if (index === 0) {
+                const pill = document.createElement("span");
+                pill.className = "pill";
+                pill.textContent = "Latest";
+                card.appendChild(pill);
+            }
+
+            return card;
         });
 
+        const more = limitList(grid, cards, 12, "skins");
         panel.appendChild(grid);
-
-        if (skins.length > 30) {
-            const more = document.createElement("p");
-            more.className = "player-message";
-            more.textContent = `Showing the 30 newest of ${skins.length} skins.`;
-            panel.appendChild(more);
-        }
+        if (more) panel.appendChild(more);
     }
 
     const note = document.createElement("p");
     note.className = "player-note";
-    note.textContent = "Entries marked \"Seen\" are recorded by CapeMC from the first time it saw this player. Older history comes from ViewMC when it has it.";
+    note.textContent = "\"Seen\" dates are when CapeMC first saw a change. Older names come from ViewMC, mc-api.io and laby.net when they have them.";
     panel.appendChild(note);
 
     return panel;
@@ -2060,25 +2188,78 @@ async function fetchTracked(name) {
     }
 }
 
+// Reads a list of names from mc-api.io (only if it sends one we recognise).
+function normalizeApiNames(raw) {
+    if (!Array.isArray(raw)) return [];
+
+    return raw.map(item => {
+        if (typeof item === "string") return { username: item, timestamp: null };
+
+        const name = item && (item.name || item.username);
+        const time = item && (item.changedToAt ?? item.changed_at ?? item.timestamp);
+        const stamp = typeof time === "number" ? time : (Date.parse(time) || null);
+
+        return name ? { username: name, timestamp: stamp } : null;
+    }).filter(Boolean);
+}
+
+// If a name shows up in several places, keep the entry that knows the date best.
+function mergeNames(...lists) {
+    const score = entry => {
+        if (typeof entry.timestamp === "number" && entry.timestamp > 0) return entry.tracked ? 1 : 3;
+        return entry.timestamp === 0 ? 2 : 0;
+    };
+
+    const byName = new Map();
+
+    lists.flat().forEach(entry => {
+        if (!entry || typeof entry.username !== "string" || !entry.username) return;
+
+        const key = entry.username.toLowerCase();
+        const existing = byName.get(key);
+
+        if (!existing || score(entry) > score(existing)) byName.set(key, entry);
+    });
+
+    return [...byName.values()];
+}
+
 function applyTracked(java) {
     const tracked = java.tracked;
 
-    if (!tracked) return;
+    // Older names from mc-api.io, if it sent any.
+    const apiNames = normalizeApiNames(java.apiNames);
+
+    if (!tracked) {
+        java.nameHistory = mergeNames(java.nameHistory || [], apiNames);
+        return;
+    }
 
     // Straight from Mojang, so it beats any older saved copy.
     java.textures.cape = textureUrl(tracked.capeHash);
     if (tracked.skinHash) java.textures.skin = textureUrl(tracked.skinHash);
 
-    const names = [...(java.nameHistory || [])];
-    const known = new Set(names.map(entry => String(entry.username).toLowerCase()));
+    // Older names from laby.net (looked up by the Worker).
+    let originalSeen = false;
+    const labyNames = (tracked.labyNames || []).map(entry => {
+        const changed = typeof entry.changed_at === "number" ? entry.changed_at : null;
+        let timestamp = changed;
 
-    (tracked.names || []).forEach(entry => {
-        if (!known.has(entry.name.toLowerCase())) {
-            names.push({ username: entry.name, timestamp: entry.seen_at, tracked: true });
+        if (changed === null && !originalSeen) {
+            timestamp = 0;
+            originalSeen = true;
         }
+
+        return { username: entry.name, timestamp, approx: entry.accurate === false };
     });
 
-    java.nameHistory = names;
+    const seenNames = (tracked.names || []).map(entry => ({
+        username: entry.name,
+        timestamp: entry.seen_at,
+        tracked: true
+    }));
+
+    java.nameHistory = mergeNames(java.nameHistory || [], labyNames, apiNames, seenNames);
 
     java.skinHistory = [
         ...(java.skinHistory || []),
@@ -2166,21 +2347,7 @@ if (playerForm) {
 
 const byId = id => document.getElementById(id);
 
-// ----- Tool tabs -----
 let editorViewer = null;
-
-document.querySelectorAll("#toolTabs .profile-tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-        document.querySelectorAll("#toolTabs .profile-tab").forEach(other => {
-            const isActive = other === tab;
-            other.classList.toggle("active", isActive);
-            other.setAttribute("aria-selected", String(isActive));
-            byId(`tool-${other.dataset.tool}`).classList.toggle("hidden", !isActive);
-        });
-
-        if (tab.dataset.tool === "skin") startEditorViewer();
-    });
-});
 
 // ----- Gradient generator -----
 const gradText = byId("gradText");
@@ -2517,6 +2684,660 @@ byId("skinDownload").addEventListener("click", () => {
 
 drawGuides();
 
+// ----- Chibi maker -----
+// Draws a big-headed pixel version of a skin: the head is doubled in size
+// and the body and legs are squashed. Everything happens in your browser.
+const chibiCanvas = byId("chibiCanvas");
+const chibiCtx = chibiCanvas.getContext("2d", { willReadFrequently: true });
+const chibiMsg = byId("chibiMsg");
+const CHIBI_W = 16;
+const CHIBI_H = 26;
+const CHIBI_PAD = 1;
+const CHIBI_BODY_ROWS = [0, 2, 4, 6, 8, 11];
+const CHIBI_LEG_ROWS = [0, 4, 8, 11];
+let chibiSkin = null;
+
+function chibiRows(ctx, skin, sx, sy, width, rows, dx, dy, mirror) {
+    ctx.save();
+
+    if (mirror) {
+        ctx.translate(dx + width, 0);
+        ctx.scale(-1, 1);
+    }
+
+    rows.forEach((row, index) => {
+        ctx.drawImage(skin, sx, sy + row, width, 1, mirror ? 0 : dx, dy + index, width, 1);
+    });
+
+    ctx.restore();
+}
+
+function renderChibi() {
+    if (!chibiSkin) return;
+
+    const arm = byId("chibiSlim").checked ? 3 : 4;
+    const legacy = chibiSkin.height === 32;
+
+    const sprite = document.createElement("canvas");
+    sprite.width = CHIBI_W;
+    sprite.height = CHIBI_H;
+
+    const s = sprite.getContext("2d", { willReadFrequently: true });
+    s.imageSmoothingEnabled = false;
+
+    // Head (face + hat layer), drawn twice as big.
+    s.drawImage(chibiSkin, 8, 8, 8, 8, 0, 0, 16, 16);
+    s.drawImage(chibiSkin, 40, 8, 8, 8, 0, 0, 16, 16);
+
+    // Body
+    chibiRows(s, chibiSkin, 20, 20, 8, CHIBI_BODY_ROWS, 4, 16, false);
+    if (!legacy) chibiRows(s, chibiSkin, 20, 36, 8, CHIBI_BODY_ROWS, 4, 16, false);
+
+    // Arms (the character's right arm is on the left of the picture)
+    chibiRows(s, chibiSkin, 44, 20, arm, CHIBI_BODY_ROWS, 4 - arm, 16, false);
+    if (!legacy) chibiRows(s, chibiSkin, 44, 36, arm, CHIBI_BODY_ROWS, 4 - arm, 16, false);
+
+    if (legacy) {
+        chibiRows(s, chibiSkin, 44, 20, arm, CHIBI_BODY_ROWS, 12, 16, true);
+    } else {
+        chibiRows(s, chibiSkin, 36, 52, arm, CHIBI_BODY_ROWS, 12, 16, false);
+        chibiRows(s, chibiSkin, 52, 52, arm, CHIBI_BODY_ROWS, 12, 16, false);
+    }
+
+    // Legs
+    chibiRows(s, chibiSkin, 4, 20, 4, CHIBI_LEG_ROWS, 4, 22, false);
+    if (!legacy) chibiRows(s, chibiSkin, 4, 36, 4, CHIBI_LEG_ROWS, 4, 22, false);
+
+    if (legacy) {
+        chibiRows(s, chibiSkin, 4, 20, 4, CHIBI_LEG_ROWS, 8, 22, true);
+    } else {
+        chibiRows(s, chibiSkin, 20, 52, 4, CHIBI_LEG_ROWS, 8, 22, false);
+        chibiRows(s, chibiSkin, 4, 52, 4, CHIBI_LEG_ROWS, 8, 22, false);
+    }
+
+    // Final picture: background, outline, then the character.
+    const width = CHIBI_W + CHIBI_PAD * 2;
+    const height = CHIBI_H + CHIBI_PAD * 2;
+    chibiCanvas.width = width;
+    chibiCanvas.height = height;
+    chibiCtx.imageSmoothingEnabled = false;
+    chibiCtx.clearRect(0, 0, width, height);
+
+    const background = byId("chibiBg").value;
+
+    if (background) {
+        chibiCtx.fillStyle = background;
+        chibiCtx.fillRect(0, 0, width, height);
+    }
+
+    if (byId("chibiOutline").checked) {
+        try {
+            const pixels = s.getImageData(0, 0, CHIBI_W, CHIBI_H).data;
+            const solid = (x, y) => x >= 0 && y >= 0 && x < CHIBI_W && y < CHIBI_H && pixels[(y * CHIBI_W + x) * 4 + 3] > 0;
+
+            chibiCtx.fillStyle = "#1b1b1f";
+
+            for (let y = -1; y <= CHIBI_H; y++) {
+                for (let x = -1; x <= CHIBI_W; x++) {
+                    if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) {
+                        chibiCtx.fillRect(x + CHIBI_PAD, y + CHIBI_PAD, 1, 1);
+                    }
+                }
+            }
+        } catch (error) {
+            chibiMsg.textContent = "The outline needs a skin you upload yourself.";
+        }
+    }
+
+    chibiCtx.drawImage(sprite, CHIBI_PAD, CHIBI_PAD);
+}
+
+function loadChibiSkin(image) {
+    if (image.width !== 64 || (image.height !== 64 && image.height !== 32)) {
+        chibiMsg.textContent = "Please use a 64×64 (or 64×32) skin PNG.";
+        return;
+    }
+
+    chibiSkin = image;
+    chibiMsg.textContent = "";
+    renderChibi();
+}
+
+byId("chibiFile").addEventListener("change", event => {
+    const file = event.target.files[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.addEventListener("load", () => {
+        loadChibiSkin(image);
+        URL.revokeObjectURL(url);
+    });
+
+    image.addEventListener("error", () => {
+        chibiMsg.textContent = "That file couldn't be read as an image.";
+        URL.revokeObjectURL(url);
+    });
+
+    image.src = url;
+});
+
+byId("chibiLoad").addEventListener("click", async () => {
+    const name = byId("chibiUser").value.trim();
+
+    if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
+        chibiMsg.textContent = "Enter a valid Java username.";
+        return;
+    }
+
+    chibiMsg.textContent = "Loading skin…";
+    const result = await fetchJavaProfile(name);
+
+    if (result.status !== "found" || !result.textures.skin) {
+        chibiMsg.textContent = result.status === "error"
+            ? "Couldn't reach the lookup service."
+            : "No skin found for that name.";
+        return;
+    }
+
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.addEventListener("load", () => loadChibiSkin(image));
+    image.addEventListener("error", () => {
+        chibiMsg.textContent = "That skin can't be loaded here. Download it and use Upload instead.";
+    });
+    image.src = result.textures.skin;
+});
+
+["chibiSlim", "chibiOutline", "chibiBg"].forEach(id => byId(id).addEventListener("change", renderChibi));
+
+byId("chibiDownload").addEventListener("click", () => {
+    if (!chibiSkin) {
+        chibiMsg.textContent = "Load a skin first.";
+        return;
+    }
+
+    const scale = Number(byId("chibiScale").value) || 16;
+    const out = document.createElement("canvas");
+    out.width = chibiCanvas.width * scale;
+    out.height = chibiCanvas.height * scale;
+
+    const ctx = out.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(chibiCanvas, 0, 0, out.width, out.height);
+
+    out.toBlob(blob => {
+        if (!blob) return;
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "chibi.png";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    });
+});
+
+// ----- Banner designer -----
+// Patterns are drawn on Minecraft's 20x40 banner grid. The shapes are
+// simplified; the pattern names in the command are the real ones.
+const BANNER_COLORS = [
+    ["white", "#f9fffe"], ["orange", "#f9801d"], ["magenta", "#c74ebd"], ["light_blue", "#3ab3da"],
+    ["yellow", "#fed83d"], ["lime", "#80c71f"], ["pink", "#f38baa"], ["gray", "#474f52"],
+    ["light_gray", "#9d9d97"], ["cyan", "#169c9c"], ["purple", "#8932b8"], ["blue", "#3c44aa"],
+    ["brown", "#835432"], ["green", "#5e7c16"], ["red", "#b02e26"], ["black", "#1d1d21"]
+];
+const BANNER_W = 20;
+const BANNER_H = 40;
+const bannerZig = x => Math.abs((x % 6) - 3);
+const bannerFade = value => Math.max(0, Math.min(1, value));
+const chevronTop = x => 13 + Math.abs(x - 9.5) * 1.8;
+const invChevronBottom = x => 27 - Math.abs(x - 9.5) * 1.8;
+
+const BANNER_PATTERNS = {
+    stripe_bottom: ["Base", (x, y) => y >= 33],
+    stripe_top: ["Chief", (x, y) => y <= 6],
+    stripe_left: ["Pale Dexter", x => x <= 6],
+    stripe_right: ["Pale Sinister", x => x >= 13],
+    stripe_center: ["Pale", x => x >= 7 && x <= 12],
+    stripe_middle: ["Fess", (x, y) => y >= 17 && y <= 22],
+    stripe_downright: ["Bend", (x, y) => Math.abs(y - 2 * x - 1) <= 6],
+    stripe_downleft: ["Bend Sinister", (x, y) => Math.abs(y - 2 * (19 - x) - 1) <= 6],
+    small_stripes: ["Paly", x => x % 4 < 2],
+    cross: ["Saltire", (x, y) => Math.abs(y - 2 * x - 1) <= 4 || Math.abs(y - 2 * (19 - x) - 1) <= 4],
+    straight_cross: ["Cross", (x, y) => (x >= 7 && x <= 12) || (y >= 17 && y <= 22)],
+    half_vertical: ["Per Pale", x => x < 10],
+    half_vertical_right: ["Per Pale Inverted", x => x >= 10],
+    half_horizontal: ["Per Fess", (x, y) => y < 20],
+    half_horizontal_bottom: ["Per Fess Inverted", (x, y) => y >= 20],
+    square_top_left: ["Canton Dexter", (x, y) => x < 8 && y < 8],
+    square_top_right: ["Canton Sinister", (x, y) => x >= 12 && y < 8],
+    square_bottom_left: ["Base Dexter Canton", (x, y) => x < 8 && y >= 32],
+    square_bottom_right: ["Base Sinister Canton", (x, y) => x >= 12 && y >= 32],
+    triangle_bottom: ["Chevron", (x, y) => y >= chevronTop(x) && y <= chevronTop(x) + 10],
+    triangle_top: ["Inverted Chevron", (x, y) => y <= invChevronBottom(x) && y >= invChevronBottom(x) - 10],
+    triangles_bottom: ["Base Indented", (x, y) => y >= 31 + bannerZig(x)],
+    triangles_top: ["Chief Indented", (x, y) => y <= 8 - bannerZig(x)],
+    circle: ["Roundel", (x, y) => (x - 9.5) ** 2 + (y - 19.5) ** 2 <= 42],
+    rhombus: ["Lozenge", (x, y) => Math.abs(x - 9.5) / 9.5 + Math.abs(y - 19.5) / 19.5 <= 0.85],
+    border: ["Bordure", (x, y) => x <= 1 || x >= 18 || y <= 1 || y >= 38],
+    gradient: ["Gradient", (x, y) => bannerFade(1 - y / 26)],
+    gradient_up: ["Base Gradient", (x, y) => bannerFade(1 - (39 - y) / 26)],
+    bricks: ["Field Masoned", (x, y) => y % 5 === 0 || (x + (Math.floor(y / 5) % 2) * 5) % 10 === 0]
+};
+
+const banner = { base: "white", color: "red", layers: [] };
+const bannerCanvas = byId("bannerCanvas");
+const bannerCtx = bannerCanvas.getContext("2d");
+const bannerHex = name => BANNER_COLORS.find(([id]) => id === name)[1];
+
+function buildSwatches(container, getSelected, onPick) {
+    container.replaceChildren();
+
+    BANNER_COLORS.forEach(([name, hex]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "swatch";
+        button.style.background = hex;
+        button.setAttribute("aria-label", name.replace("_", " "));
+        button.setAttribute("aria-pressed", String(getSelected() === name));
+        button.addEventListener("click", () => {
+            onPick(name);
+            container.querySelectorAll(".swatch").forEach((item, index) => {
+                item.setAttribute("aria-pressed", String(BANNER_COLORS[index][0] === name));
+            });
+        });
+        container.appendChild(button);
+    });
+}
+
+function renderBanner() {
+    const image = bannerCtx.createImageData(BANNER_W, BANNER_H);
+    const data = image.data;
+    const base = hexToRgb(bannerHex(banner.base));
+
+    for (let i = 0; i < data.length; i += 4) {
+        data[i] = base[0];
+        data[i + 1] = base[1];
+        data[i + 2] = base[2];
+        data[i + 3] = 255;
+    }
+
+    banner.layers.forEach(layer => {
+        const mask = BANNER_PATTERNS[layer.pattern][1];
+        const rgb = hexToRgb(bannerHex(layer.color));
+
+        for (let y = 0; y < BANNER_H; y++) {
+            for (let x = 0; x < BANNER_W; x++) {
+                let alpha = mask(x, y);
+                if (alpha === true) alpha = 1;
+                if (!alpha) continue;
+
+                const i = (y * BANNER_W + x) * 4;
+                data[i] = data[i] * (1 - alpha) + rgb[0] * alpha;
+                data[i + 1] = data[i + 1] * (1 - alpha) + rgb[1] * alpha;
+                data[i + 2] = data[i + 2] * (1 - alpha) + rgb[2] * alpha;
+            }
+        }
+    });
+
+    bannerCtx.putImageData(image, 0, 0);
+
+    // Layer list
+    const list = byId("bannerLayers");
+    list.replaceChildren();
+
+    if (!banner.layers.length) {
+        const empty = document.createElement("p");
+        empty.className = "player-message";
+        empty.textContent = "No layers yet.";
+        list.appendChild(empty);
+    }
+
+    banner.layers.forEach((layer, index) => {
+        const row = document.createElement("div");
+        row.className = "layer-row";
+
+        const dot = document.createElement("span");
+        dot.className = "layer-dot";
+        dot.style.background = bannerHex(layer.color);
+
+        const name = document.createElement("span");
+        name.className = "layer-name";
+        name.textContent = `${BANNER_PATTERNS[layer.pattern][0]} · ${layer.color.replace("_", " ")}`;
+
+        row.append(dot, name);
+
+        [["↑", -1], ["↓", 1], ["✕", 0]].forEach(([label, move]) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "profile-copy";
+            button.textContent = label;
+            button.setAttribute("aria-label", move === 0 ? "Remove layer" : move < 0 ? "Move layer up" : "Move layer down");
+            button.addEventListener("click", () => {
+                if (move === 0) {
+                    banner.layers.splice(index, 1);
+                } else if (index + move >= 0 && index + move < banner.layers.length) {
+                    [banner.layers[index], banner.layers[index + move]] = [banner.layers[index + move], banner.layers[index]];
+                }
+                renderBanner();
+            });
+            row.appendChild(button);
+        });
+
+        list.appendChild(row);
+    });
+
+    // Give command (1.20.5+ item component format)
+    const patterns = banner.layers.map(layer => `{pattern:"minecraft:${layer.pattern}",color:"${layer.color}"}`).join(",");
+    byId("bannerCmd").value = banner.layers.length
+        ? `/give @p minecraft:${banner.base}_banner[banner_patterns=[${patterns}]]`
+        : `/give @p minecraft:${banner.base}_banner`;
+}
+
+buildSwatches(byId("bannerBase"), () => banner.base, name => { banner.base = name; renderBanner(); });
+buildSwatches(byId("bannerColors"), () => banner.color, name => { banner.color = name; });
+
+Object.entries(BANNER_PATTERNS).forEach(([id, [label]]) => {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = label;
+    byId("bannerPattern").appendChild(option);
+});
+
+byId("bannerAdd").addEventListener("click", () => {
+    banner.layers.push({ pattern: byId("bannerPattern").value, color: banner.color });
+    renderBanner();
+});
+
+byId("bannerClear").addEventListener("click", () => {
+    banner.layers = [];
+    renderBanner();
+});
+
+byId("bannerCopy").addEventListener("click", async event => {
+    const button = event.currentTarget;
+    const copied = await copyWalletAddress(byId("bannerCmd").value);
+    button.textContent = copied ? "Copied!" : "Copy failed";
+    setTimeout(() => { button.textContent = "Copy command"; }, 1800);
+});
+
+byId("bannerDownload").addEventListener("click", () => {
+    const scale = 16;
+    const out = document.createElement("canvas");
+    out.width = BANNER_W * scale;
+    out.height = BANNER_H * scale;
+
+    const ctx = out.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(bannerCanvas, 0, 0, out.width, out.height);
+
+    out.toBlob(blob => {
+        if (!blob) return;
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "banner.png";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    });
+});
+
+renderBanner();
+
+// ----- Skin art maker -----
+// NameMC shows a player's skin history as a grid of small faces, 9 per row,
+// newest first. This splits a 72x24 picture (9 x 3 squares of 8x8) into 26
+// skins whose face is one square each. The top-left square is the newest
+// skin, so it's left for your main skin.
+const ART_W = 72;
+const ART_H = 24;
+const ART_COLS = 9;
+const ART_COUNT = 26;
+const artCanvas = byId("artCanvas");
+const artCtx = artCanvas.getContext("2d");
+const artMsg = byId("artMsg");
+const artBuffer = document.createElement("canvas");
+artBuffer.width = ART_W;
+artBuffer.height = ART_H;
+const artBufferCtx = artBuffer.getContext("2d", { willReadFrequently: true });
+let artSource = null;
+let artBase = null;
+
+function drawArt() {
+    const bg = byId("artBg").value;
+    artBufferCtx.fillStyle = bg;
+    artBufferCtx.fillRect(0, 0, ART_W, ART_H);
+
+    if (artSource) {
+        const w = artSource.width;
+        const h = artSource.height;
+        const mode = byId("artFit").value;
+        let dw = ART_W;
+        let dh = ART_H;
+
+        if (mode !== "stretch") {
+            const scale = mode === "contain" ? Math.min(ART_W / w, ART_H / h) : Math.max(ART_W / w, ART_H / h);
+            dw = w * scale;
+            dh = h * scale;
+        }
+
+        // Already 72x24? Keep it razor sharp instead of smoothing it.
+        artBufferCtx.imageSmoothingEnabled = !(w === ART_W && h === ART_H);
+        artBufferCtx.drawImage(artSource, (ART_W - dw) / 2, (ART_H - dh) / 2, dw, dh);
+    }
+
+    // Preview = the picture plus a hatch over the unused first square.
+    artCtx.imageSmoothingEnabled = false;
+    artCtx.clearRect(0, 0, ART_W, ART_H);
+    artCtx.drawImage(artBuffer, 0, 0);
+    artCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    artCtx.fillRect(0, 0, 8, 8);
+    artCtx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    artCtx.lineWidth = 1;
+    artCtx.beginPath();
+    artCtx.moveTo(0, 0);
+    artCtx.lineTo(8, 8);
+    artCtx.moveTo(8, 0);
+    artCtx.lineTo(0, 8);
+    artCtx.stroke();
+}
+
+function readArtImage(file, onLoad, onFail) {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.addEventListener("load", () => {
+        onLoad(image);
+        URL.revokeObjectURL(url);
+    });
+
+    image.addEventListener("error", () => {
+        onFail();
+        URL.revokeObjectURL(url);
+    });
+
+    image.src = url;
+}
+
+byId("artFile").addEventListener("change", event => {
+    const file = event.target.files[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    readArtImage(file, image => {
+        artSource = image;
+        artMsg.textContent = "";
+        drawArt();
+    }, () => {
+        artMsg.textContent = "That file couldn't be read as an image.";
+    });
+});
+
+byId("artBase").addEventListener("change", event => {
+    const file = event.target.files[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    readArtImage(file, image => {
+        if (image.width !== 64 || (image.height !== 64 && image.height !== 32)) {
+            artMsg.textContent = "A base skin must be a 64×64 (or 64×32) PNG.";
+            return;
+        }
+
+        artBase = image;
+        artMsg.textContent = "Base skin added.";
+    }, () => {
+        artMsg.textContent = "That file couldn't be read as an image.";
+    });
+});
+
+byId("artBaseClear").addEventListener("click", () => {
+    artBase = null;
+    artMsg.textContent = "Base skin removed.";
+});
+
+["artFit", "artBg"].forEach(id => byId(id).addEventListener("input", drawArt));
+
+// Skin number k (1 to 26) shows square k of the picture on its face.
+function buildArtSkin(k) {
+    const skin = document.createElement("canvas");
+    skin.width = 64;
+    skin.height = 64;
+
+    const ctx = skin.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    if (artBase) {
+        ctx.drawImage(artBase, 0, 0);
+    } else {
+        ctx.fillStyle = byId("artBody").value;
+        ctx.fillRect(0, 0, 64, 64);
+    }
+
+    ctx.clearRect(32, 0, 32, 16); // hat layer off, so it can't cover the face
+
+    const column = k % ART_COLS;
+    const row = Math.floor(k / ART_COLS);
+    ctx.drawImage(artBuffer, column * 8, row * 8, 8, 8, 8, 8, 8, 8);
+
+    return skin;
+}
+
+// A small zip writer (no compression), so 26 files download as one.
+const CRC_TABLE = (() => {
+    const table = new Uint32Array(256);
+
+    for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        table[n] = c >>> 0;
+    }
+
+    return table;
+})();
+
+function crc32(bytes) {
+    let crc = 0xffffffff;
+
+    for (let i = 0; i < bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 255] ^ (crc >>> 8);
+
+    return (crc ^ 0xffffffff) >>> 0;
+}
+
+function makeZip(files) {
+    const encoder = new TextEncoder();
+    const parts = [];
+    const central = [];
+    let offset = 0;
+
+    files.forEach(file => {
+        const name = encoder.encode(file.name);
+        const crc = crc32(file.data);
+
+        const local = new DataView(new ArrayBuffer(30));
+        local.setUint32(0, 0x04034b50, true);
+        local.setUint16(4, 20, true);
+        local.setUint16(10, 0, true);
+        local.setUint16(12, 33, true); // date: 1980-01-01
+        local.setUint32(14, crc, true);
+        local.setUint32(18, file.data.length, true);
+        local.setUint32(22, file.data.length, true);
+        local.setUint16(26, name.length, true);
+
+        const entry = new DataView(new ArrayBuffer(46));
+        entry.setUint32(0, 0x02014b50, true);
+        entry.setUint16(4, 20, true);
+        entry.setUint16(6, 20, true);
+        entry.setUint16(14, 33, true);
+        entry.setUint32(16, crc, true);
+        entry.setUint32(20, file.data.length, true);
+        entry.setUint32(24, file.data.length, true);
+        entry.setUint16(28, name.length, true);
+        entry.setUint32(42, offset, true);
+
+        parts.push(local, name, file.data);
+        central.push(entry, name);
+        offset += 30 + name.length + file.data.length;
+    });
+
+    const centralSize = central.reduce((total, part) => total + part.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, files.length, true);
+    end.setUint16(10, files.length, true);
+    end.setUint32(12, centralSize, true);
+    end.setUint32(16, offset, true);
+
+    return new Blob([...parts, ...central, end], { type: "application/zip" });
+}
+
+byId("artDownload").addEventListener("click", async () => {
+    if (!artSource) {
+        artMsg.textContent = "Choose an image first.";
+        return;
+    }
+
+    artMsg.textContent = "Building skins…";
+
+    const files = [];
+
+    for (let k = 1; k <= ART_COUNT; k++) {
+        const blob = await new Promise(resolve => buildArtSkin(k).toBlob(resolve));
+
+        if (!blob) {
+            artMsg.textContent = "Couldn't build the skins in this browser.";
+            return;
+        }
+
+        files.push({
+            name: `skin-${String(k).padStart(2, "0")}.png`,
+            data: new Uint8Array(await blob.arrayBuffer())
+        });
+    }
+
+    files.push({
+        name: "README.txt",
+        data: new TextEncoder().encode(
+            "Apply skin-26 first, then 25, 24 ... down to skin-01, then your normal skin.\n" +
+            "After each one, open your NameMC profile and wait until it shows in your history.\n"
+        )
+    });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(makeZip(files));
+    link.download = "skin-art.zip";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+    artMsg.textContent = "Done. Apply skin-26 first and finish with skin-01.";
+});
+
+drawArt();
+
 // ========================================
 // PLAYER SUGGESTIONS (ADDED)
 // Shows exact matches (Java / Bedrock) plus names looked up before on
@@ -2702,6 +3523,529 @@ if (themeButton) {
 applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light", false);
 
 // ========================================
+// SKINS GALLERY (ADDED)
+// Most worn / latest skins on the Players page and random skins on Home.
+// The numbers come from your database through the Worker.
+// ========================================
+
+// A flat front view of a skin (head, body, arms, legs and their outer layers).
+function drawSkinFront(canvas, url) {
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    loadImage(url, skin => {
+        const legacy = skin.height === 32;
+
+        const part = (sx, sy, w, h, dx, dy, mirror) => {
+            ctx.save();
+
+            if (mirror) {
+                ctx.translate(dx + w, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(skin, sx, sy, w, h, 0, dy, w, h);
+            } else {
+                ctx.drawImage(skin, sx, sy, w, h, dx, dy, w, h);
+            }
+
+            ctx.restore();
+        };
+
+        // Legs
+        part(4, 20, 4, 12, 4, 20, false);
+        if (!legacy) part(4, 36, 4, 12, 4, 20, false);
+
+        if (legacy) {
+            part(4, 20, 4, 12, 8, 20, true);
+        } else {
+            part(20, 52, 4, 12, 8, 20, false);
+            part(4, 52, 4, 12, 8, 20, false);
+        }
+
+        // Body
+        part(20, 20, 8, 12, 4, 8, false);
+        if (!legacy) part(20, 36, 8, 12, 4, 8, false);
+
+        // Arms
+        part(44, 20, 4, 12, 0, 8, false);
+        if (!legacy) part(44, 36, 4, 12, 0, 8, false);
+
+        if (legacy) {
+            part(44, 20, 4, 12, 12, 8, true);
+        } else {
+            part(36, 52, 4, 12, 12, 8, false);
+            part(52, 52, 4, 12, 12, 8, false);
+        }
+
+        // Head and hat layer
+        part(8, 8, 8, 8, 4, 0, false);
+        part(40, 8, 8, 8, 4, 0, false);
+    });
+}
+
+function buildSkinTile(entry, showDate) {
+    const tile = document.createElement("a");
+    tile.className = "skin-tile";
+    tile.href = `#skin/${entry.skin_hash}`;
+    tile.setAttribute("aria-label", `Skin worn by ${entry.players} player${entry.players === 1 ? "" : "s"}. Opens the skin page.`);
+
+    const figure = document.createElement("canvas");
+    figure.className = "skin-figure";
+    figure.width = 16;
+    figure.height = 32;
+    drawSkinFront(figure, textureUrl(entry.skin_hash));
+
+    const count = document.createElement("strong");
+    count.textContent = `${Number(entry.players).toLocaleString()} player${entry.players === 1 ? "" : "s"}`;
+
+    tile.append(figure, count);
+
+    if (showDate && entry.first_seen) {
+        const date = document.createElement("small");
+        date.textContent = `New ${formatDate(entry.first_seen)}`;
+        tile.appendChild(date);
+    }
+
+    return tile;
+}
+
+let skinLists = null;
+let skinListsTime = 0;
+let skinTab = "popular";
+const skinsBox = document.getElementById("playerSkins");
+const skinGrid = document.getElementById("skinGrid");
+const skinsNote = document.getElementById("skinsNote");
+
+function updateSkinsVisibility() {
+    // Hidden while a player is shown, or if the database isn't connected.
+    if (skinsBox) skinsBox.hidden = playerResult.childElementCount > 0 || !skinLists;
+}
+
+function renderPlayerSkins() {
+    if (!skinsBox || !skinLists) return;
+
+    const list = skinTab === "latest" ? skinLists.latest : skinLists.popular;
+
+    if (!list || !list.length) {
+        skinsNote.textContent = "No skins tracked yet. Search for a player and their skins will start appearing here.";
+        skinGrid.replaceChildren();
+    } else {
+        skinsNote.textContent = skinTab === "latest"
+            ? "Skins CapeMC saw for the first time most recently."
+            : "Skins worn by the most tracked players. The number is how many have worn it.";
+        skinGrid.replaceChildren(...list.map(entry => buildSkinTile(entry, skinTab === "latest")));
+    }
+
+    updateSkinsVisibility();
+}
+
+async function refreshPlayerSkins() {
+    if (!skinLists || Date.now() - skinListsTime > 120000) {
+        const data = await fetchJson("/api/skins");
+
+        if (data && Array.isArray(data.popular)) {
+            skinLists = data;
+            skinListsTime = Date.now();
+        }
+    }
+
+    renderPlayerSkins();
+}
+
+document.querySelectorAll("#skinTabs .profile-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        skinTab = tab.dataset.skins;
+
+        document.querySelectorAll("#skinTabs .profile-tab").forEach(other => {
+            other.classList.toggle("active", other === tab);
+            other.setAttribute("aria-selected", String(other === tab));
+        });
+
+        renderPlayerSkins();
+    });
+});
+
+new MutationObserver(updateSkinsVisibility).observe(playerResult, { childList: true });
+
+// ---------- Skin page ----------
+// #skin/<hash>: a 3D view of one skin and the players CapeMC has seen wearing it.
+let skinPageToken = 0;
+
+async function openSkin(hash) {
+    const body = document.getElementById("skinDetailBody");
+    const sub = document.getElementById("skinDetailSub");
+    const token = ++skinPageToken;
+
+    disposeViewer();
+    sub.textContent = "";
+
+    const loading = document.createElement("p");
+    loading.className = "player-message";
+    loading.textContent = "Loading skin…";
+    body.replaceChildren(loading);
+
+    const data = await fetchJson(`/api/skins/${hash}`);
+
+    if (token !== skinPageToken) return;
+
+    document.title = "Skin — CapeMC";
+    const url = textureUrl(hash);
+    const parts = [];
+
+    // 3D view (drag to rotate). If the browser can't load it, the flat view below still works.
+    parts.push(buildViewerFrame({ skinSources: [url], capeUrl: null, fallbackSrc: null, label: "This skin" }));
+
+    // Summary card
+    const card = document.createElement("div");
+    card.className = "player-card";
+
+    const figure = document.createElement("canvas");
+    figure.className = "skin-figure skin-figure-lg";
+    figure.width = 16;
+    figure.height = 32;
+    figure.setAttribute("role", "img");
+    figure.setAttribute("aria-label", "Front view of the skin");
+    drawSkinFront(figure, url);
+
+    const info = document.createElement("div");
+    info.className = "player-info";
+
+    const headline = document.createElement("h2");
+    const players = data ? Number(data.players) || 0 : 0;
+    headline.textContent = data
+        ? `${players.toLocaleString()} player${players === 1 ? "" : "s"}`
+        : "Details unavailable";
+    info.appendChild(headline);
+
+    const line = document.createElement("p");
+
+    if (!data) {
+        line.textContent = "The database isn't connected, so who wears this skin can't be shown.";
+    } else if (!players) {
+        line.textContent = "CapeMC hasn't tracked this skin yet.";
+    } else {
+        line.textContent = `have worn this skin. First seen ${formatDate(data.first_seen)}, last seen ${formatDate(data.last_seen)}.`;
+    }
+
+    info.appendChild(line);
+
+    const link = document.createElement("a");
+    link.className = "profile-link";
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open the skin image ↗";
+    info.appendChild(link);
+
+    card.append(figure, info);
+    parts.push(card);
+
+    // Who wears it
+    const wearers = Array.isArray(data?.wearers) ? data.wearers : [];
+
+    if (wearers.length) {
+        parts.push(historyHeading("Players", players));
+
+        const list = document.createElement("div");
+
+        wearers.forEach(entry => {
+            const row = document.createElement("div");
+            row.className = "history-row";
+
+            const name = document.createElement("a");
+            name.className = "wearer-link";
+            name.href = `#player/${encodeURIComponent(entry.name)}`;
+            name.textContent = entry.name;
+
+            const date = document.createElement("span");
+            date.textContent = `Last seen ${formatDate(entry.last_seen)}`;
+
+            row.append(name, date);
+            list.appendChild(row);
+        });
+
+        parts.push(list);
+
+        if (players > wearers.length) {
+            const more = document.createElement("p");
+            more.className = "player-note";
+            more.textContent = `Showing the ${wearers.length} most recent of ${players.toLocaleString()} players.`;
+            parts.push(more);
+        }
+    }
+
+    body.replaceChildren(...parts);
+}
+
+// Home: random skins with a shuffle button.
+async function loadRandomSkins() {
+    const wrap = document.getElementById("homeSkinsWrap");
+    const grid = document.getElementById("homeSkins");
+
+    if (!wrap) return;
+
+    const data = await fetchJson("/api/skins/random");
+    const list = Array.isArray(data?.skins) ? data.skins : [];
+
+    grid.replaceChildren(...list.map(entry => buildSkinTile(entry, false)));
+    wrap.hidden = list.length === 0;
+}
+
+document.getElementById("shuffleSkins")?.addEventListener("click", loadRandomSkins);
+
+// ========================================
+// SERVERS + REALMS (ADDED)
+// servers.json and realms.json are edited in the admin page. Player counts
+// come live from the public mcstatus.io API.
+// ========================================
+
+let servers = [];
+let realms = [];
+let serverStatus = {};
+let serverStatusTime = 0;
+let serverRefresh = null;
+
+async function loadServersAndRealms() {
+    const [serverData, realmData] = await Promise.all([fetchJson("servers.json"), fetchJson("realms.json")]);
+
+    servers = (serverData?.servers || []).filter(server =>
+        server && server.name && /^[A-Za-z0-9.-]+(:\d{1,5})?$/.test(server.address || "")
+    );
+
+    realms = (realmData?.realms || []).filter(realm =>
+        realm && realm.name && /^[A-Za-z0-9_-]{4,24}$/.test(realm.code || "")
+    );
+
+    renderRealms();
+    renderServers();
+    renderHomeServers();
+}
+
+async function fetchServerStatus(server) {
+    try {
+        const options = { cache: "no-store" };
+
+        if (AbortSignal.timeout) options.signal = AbortSignal.timeout(7000);
+
+        const response = await fetch(`https://api.mcstatus.io/v2/status/java/${server.address}`, options);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        return data && typeof data === "object" ? data : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function refreshServerStatuses(force) {
+    if (serverRefresh) return serverRefresh;
+    if (!force && Date.now() - serverStatusTime < 120000) return Promise.resolve();
+    if (!servers.length) return Promise.resolve();
+
+    serverRefresh = Promise.all(servers.map(async server => {
+        serverStatus[server.address] = await fetchServerStatus(server);
+    })).then(() => {
+        serverStatusTime = Date.now();
+        serverRefresh = null;
+        renderServers();
+        renderHomeServers();
+    });
+
+    return serverRefresh;
+}
+
+const serverPlayers = server => {
+    const status = serverStatus[server.address];
+    return status && status.online && status.players ? Number(status.players.online) || 0 : -1;
+};
+
+const sortedServers = () => [...servers].sort((a, b) => serverPlayers(b) - serverPlayers(a));
+
+function buildServerCard(server, full) {
+    const status = serverStatus[server.address];
+    const card = document.createElement("div");
+    card.className = "server-card";
+
+    const icon = document.createElement("div");
+    icon.className = "server-icon";
+
+    if (status && typeof status.icon === "string" && status.icon.startsWith("data:image/")) {
+        const image = document.createElement("img");
+        image.src = status.icon;
+        image.alt = "";
+        icon.appendChild(image);
+    } else {
+        icon.textContent = server.name.charAt(0).toUpperCase();
+    }
+
+    const main = document.createElement("div");
+    main.className = "server-main";
+
+    const name = document.createElement("strong");
+    name.textContent = server.name;
+
+    const meta = document.createElement("div");
+    meta.className = "server-meta";
+
+    const dot = document.createElement("span");
+    dot.className = "status-dot";
+
+    let text;
+
+    if (!status) {
+        text = "Status unavailable";
+    } else if (!status.online) {
+        dot.classList.add("offline");
+        text = "Offline";
+    } else {
+        dot.classList.add("online");
+        const online = Number(status.players?.online) || 0;
+        text = `${online.toLocaleString()} online`;
+
+        const version = status.version?.name_clean;
+        if (full && version) text += ` · ${version}`;
+    }
+
+    meta.append(dot, text);
+    main.append(name, meta);
+
+    if (full && server.description) {
+        const description = document.createElement("div");
+        description.className = "server-desc";
+        description.textContent = server.description;
+        main.appendChild(description);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "server-actions";
+
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "profile-copy";
+    copy.textContent = server.address;
+    copy.setAttribute("aria-label", `Copy ${server.address}`);
+    copy.addEventListener("click", async () => {
+        const copied = await copyWalletAddress(server.address);
+        copy.textContent = copied ? "Copied!" : "Copy failed";
+        setTimeout(() => { copy.textContent = server.address; }, 1500);
+    });
+    actions.appendChild(copy);
+
+    if (full && /^https:\/\//.test(server.website || "")) {
+        const link = document.createElement("a");
+        link.className = "profile-link";
+        link.style.marginTop = "0";
+        link.href = server.website;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Website ↗";
+        actions.appendChild(link);
+    }
+
+    card.append(icon, main, actions);
+    return card;
+}
+
+function renderServers() {
+    const list = document.getElementById("serverList");
+
+    if (!list) return;
+
+    if (!servers.length) {
+        const empty = document.createElement("p");
+        empty.className = "player-message";
+        empty.textContent = "No servers added yet.";
+        list.replaceChildren(empty);
+        return;
+    }
+
+    list.replaceChildren(...sortedServers().map(server => buildServerCard(server, true)));
+}
+
+function renderHomeServers() {
+    const list = document.getElementById("homeServers");
+
+    if (!list) return;
+
+    list.replaceChildren(...sortedServers().slice(0, 3).map(server => buildServerCard(server, false)));
+    list.previousElementSibling.hidden = servers.length === 0;
+    list.hidden = servers.length === 0;
+    const more = list.nextElementSibling;
+    if (more) more.hidden = servers.length === 0;
+}
+
+function renderRealms() {
+    const list = document.getElementById("realmList");
+
+    if (!list) return;
+
+    if (!realms.length) {
+        const empty = document.createElement("p");
+        empty.className = "player-message";
+        empty.textContent = "No Realms added yet.";
+        list.replaceChildren(empty);
+        return;
+    }
+
+    list.replaceChildren(...realms.map(realm => {
+        const card = document.createElement("div");
+        card.className = "server-card";
+
+        const icon = document.createElement("div");
+        icon.className = "server-icon";
+        icon.textContent = realm.name.charAt(0).toUpperCase();
+
+        const main = document.createElement("div");
+        main.className = "server-main";
+
+        const name = document.createElement("strong");
+        name.textContent = realm.name;
+
+        const meta = document.createElement("div");
+        meta.className = "server-meta";
+        meta.textContent = realm.edition === "Bedrock" ? "Bedrock Realm" : "Java Realm";
+
+        main.append(name, meta);
+
+        if (realm.description) {
+            const description = document.createElement("div");
+            description.className = "server-desc";
+            description.textContent = realm.description;
+            main.appendChild(description);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "server-actions";
+
+        const join = document.createElement("a");
+        join.className = "back-btn";
+        join.style.margin = "0";
+        join.style.textDecoration = "none";
+        join.href = `https://realms.gg/${realm.code}`;
+        join.target = "_blank";
+        join.rel = "noopener noreferrer";
+        join.textContent = "Join";
+
+        actions.appendChild(join);
+        card.append(icon, main, actions);
+        return card;
+    }));
+}
+
+document.querySelectorAll("#serverTabs .profile-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll("#serverTabs .profile-tab").forEach(other => {
+            const active = other === tab;
+            other.classList.toggle("active", active);
+            other.setAttribute("aria-selected", String(active));
+        });
+
+        document.getElementById("serverPanelJava").classList.toggle("hidden", tab.dataset.stab !== "java");
+        document.getElementById("serverPanelRealms").classList.toggle("hidden", tab.dataset.stab !== "realms");
+    });
+});
+
+// ========================================
 // SITE SETTINGS (ADDED) — from settings.json (set in the admin page)
 // ========================================
 
@@ -2806,4 +4150,7 @@ loadSiteData().then(() => {
     // No focus jump or scroll on first load; reads the URL so shared links work.
     route({ focus: false, scroll: false });
     loadCapeStats();
+
+    loadServersAndRealms().then(() => refreshServerStatuses(false));
+    loadRandomSkins();
 });
