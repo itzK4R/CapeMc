@@ -47,6 +47,13 @@ async function handleApi(request, env, url) {
         if (parts[1] === "capes" && parts[2] === "stats") {
             return await statsRoute(env);
         }
+
+        if (parts[1] === "skins") {
+            if (parts[2] === "random") return await randomSkinsRoute(env);
+            if (parts[2]) return await skinDetailRoute(env, parts[2].toLowerCase());
+
+            return await skinsRoute(env);
+        }
     } catch (error) {
         return json({ error: "The lookup service is having problems." }, 502);
     }
@@ -163,6 +170,33 @@ async function cachedProfile(name) {
     return profile;
 }
 
+// ---------- laby.net (older names, best effort) ----------
+// Laby keeps name history from years back. If its API doesn't answer (or
+// blocks this request) we just return an empty list and carry on.
+async function labyNames(uuid) {
+    try {
+        const dashed = uuid.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, "$1-$2-$3-$4-$5");
+        const response = await fetch(`https://laby.net/api/v3/user/${dashed}/profile`, {
+            headers: { "user-agent": "CapeMC/1.0", accept: "application/json" },
+            signal: AbortSignal.timeout(4000)
+        });
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+
+        return (Array.isArray(data.name_history) ? data.name_history : [])
+            .filter(entry => entry && typeof entry.name === "string")
+            .map(entry => ({
+                name: entry.name,
+                changed_at: entry.changed_at ? (Date.parse(entry.changed_at) || null) : null,
+                accurate: entry.accurate !== false
+            }));
+    } catch (error) {
+        return [];
+    }
+}
+
 // ---------- Database ----------
 
 async function record(env, profile) {
@@ -224,9 +258,14 @@ async function playerRoute(env, name) {
 
     if (!profile) return json({ error: "Player not found" }, 404);
 
-    await record(env, profile);
+    const [history, laby] = await Promise.all([
+        record(env, profile).then(() => readHistory(env, profile)),
+        labyNames(profile.uuid)
+    ]);
 
-    return json(await readHistory(env, profile));
+    history.labyNames = laby;
+
+    return json(history);
 }
 
 async function statsRoute(env) {
@@ -239,4 +278,58 @@ async function statsRoute(env) {
     (rows.results || []).forEach(row => { owners[row.cape_hash] = row.owners; });
 
     return json({ owners, players: total ? total.players : 0 }, 200, { "cache-control": "public, max-age=300" });
+}
+
+// Skins: how many tracked players have worn each one.
+async function skinsRoute(env) {
+    const [popular, latest] = await Promise.all([
+        env.DB.prepare(
+            "SELECT skin_hash, COUNT(DISTINCT uuid) AS players FROM skin_history " +
+            "GROUP BY skin_hash ORDER BY players DESC, MAX(last_seen) DESC LIMIT 12"
+        ).all(),
+        env.DB.prepare(
+            "SELECT skin_hash, COUNT(DISTINCT uuid) AS players, MIN(first_seen) AS first_seen FROM skin_history " +
+            "GROUP BY skin_hash ORDER BY first_seen DESC LIMIT 12"
+        ).all()
+    ]);
+
+    return json(
+        { popular: popular.results || [], latest: latest.results || [] },
+        200,
+        { "cache-control": "public, max-age=60" }
+    );
+}
+
+async function randomSkinsRoute(env) {
+    const rows = await env.DB.prepare(
+        "SELECT skin_hash, COUNT(DISTINCT uuid) AS players FROM skin_history " +
+        "GROUP BY skin_hash ORDER BY RANDOM() LIMIT 6"
+    ).all();
+
+    return json({ skins: rows.results || [] });
+}
+
+// One skin: how many tracked players have worn it, and who.
+async function skinDetailRoute(env, hash) {
+    if (!/^[0-9a-f]{16,64}$/.test(hash)) return json({ error: "Invalid skin" }, 400);
+
+    const [summary, wearers] = await Promise.all([
+        env.DB.prepare(
+            "SELECT COUNT(DISTINCT uuid) AS players, MIN(first_seen) AS first_seen, MAX(last_seen) AS last_seen " +
+            "FROM skin_history WHERE skin_hash = ?"
+        ).bind(hash).first(),
+        env.DB.prepare(
+            "SELECT p.uuid AS uuid, p.name AS name, s.first_seen AS first_seen, s.last_seen AS last_seen " +
+            "FROM skin_history s JOIN players p ON p.uuid = s.uuid WHERE s.skin_hash = ? " +
+            "ORDER BY s.last_seen DESC LIMIT 50"
+        ).bind(hash).all()
+    ]);
+
+    return json({
+        hash,
+        players: summary ? summary.players : 0,
+        first_seen: summary ? summary.first_seen : null,
+        last_seen: summary ? summary.last_seen : null,
+        wearers: wearers.results || []
+    }, 200, { "cache-control": "public, max-age=60" });
 }
