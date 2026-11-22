@@ -40,6 +40,7 @@
             <button class="nav-btn active" data-page="home" type="button" aria-current="page">Home</button>
             <button class="nav-btn" data-page="capes" type="button">Capes</button>
             <button class="nav-btn" data-page="players" type="button">Players</button>
+            <button class="nav-btn" data-page="servers" type="button">Servers</button>
             <button class="nav-btn" data-page="tools" type="button">Tools</button>
             <button class="nav-btn" data-page="about" type="button">About</button>
         </nav>
@@ -60,6 +61,21 @@
             <button type="button" class="back-btn home-more" data-go="capes">
                 View all capes →
             </button>
+
+            <h2 class="home-label">Popular servers</h2>
+            <div class="server-list" id="homeServers"></div>
+
+            <button type="button" class="back-btn home-more" data-go="servers">
+                View all servers →
+            </button>
+
+            <div id="homeSkinsWrap" hidden>
+                <div class="home-row">
+                    <h2 class="home-label">Random skins</h2>
+                    <button type="button" class="profile-copy" id="shuffleSkins">Shuffle</button>
+                </div>
+                <div class="skin-grid" id="homeSkins"></div>
+            </div>
         </section>
 
         <section id="capes" class="page hidden" aria-label="Capes">
@@ -85,7 +101,27 @@
                 <button type="submit" class="back-btn">Look up</button>
             </form>
 
+            <!-- Skins other players have worn (shown until you look someone up) -->
+            <div id="playerSkins" class="skins-box" hidden>
+                <div class="profile-tabs" id="skinTabs" role="tablist">
+                    <button type="button" class="profile-tab active" data-skins="popular" role="tab" aria-selected="true">Most worn</button>
+                    <button type="button" class="profile-tab" data-skins="latest" role="tab" aria-selected="false">Latest</button>
+                </div>
+                <p class="note-small" id="skinsNote" style="margin-top:0"></p>
+                <div class="skin-grid" id="skinGrid"></div>
+            </div>
+
             <div id="playerResult" aria-live="polite"></div>
+        </section>
+
+        <section id="skinDetail" class="page hidden" aria-label="Skin">
+            <button type="button" class="back-btn" data-go="players">← Back to Players</button>
+            <header class="page-heading">
+                <h1>Skin</h1>
+                <p id="skinDetailSub"></p>
+            </header>
+
+            <div id="skinDetailBody" class="profile"></div>
         </section>
 
         <section id="capeDetails" class="page hidden" aria-label="Cape details">
@@ -96,17 +132,80 @@
             <div id="capeDetailContent"></div>
         </section>
 
-        <!-- ADDED: Minecraft tools -->
+        <section id="servers" class="page hidden" aria-label="Servers">
+            <header class="page-heading">
+                <h1>Servers</h1>
+                <p>Popular Java servers and Realms.</p>
+            </header>
+
+            <div class="profile-tabs" id="serverTabs" role="tablist">
+                <button type="button" class="profile-tab active" data-stab="java" role="tab" aria-selected="true">Java servers</button>
+                <button type="button" class="profile-tab" data-stab="realms" role="tab" aria-selected="false">Realms</button>
+            </div>
+
+            <div id="serverPanelJava">
+                <p class="note-small" style="margin-top:0">Player counts refresh every couple of minutes.</p>
+                <div class="server-list" id="serverList"></div>
+            </div>
+
+            <div id="serverPanelRealms" class="hidden">
+                <p class="note-small" style="margin-top:0">Realms can't be checked automatically, so these are added by hand. Tap Join to open the invite.</p>
+                <div class="server-list" id="realmList"></div>
+            </div>
+        </section>
+
+        <!-- ADDED: Minecraft tools (cards, each tool has its own page) -->
         <section id="tools" class="page hidden" aria-label="Tools">
             <header class="page-heading">
                 <h1>Minecraft Tools</h1>
                 <p>Free generators and editors.</p>
             </header>
 
-            <div class="profile-tabs" id="toolTabs" role="tablist">
-                <button type="button" class="profile-tab active" data-tool="gradient" role="tab" aria-selected="true">Gradient</button>
-                <button type="button" class="profile-tab" data-tool="skin" role="tab" aria-selected="false">Skin editor</button>
+            <div class="tool-links">
+                <a class="tool-link" href="#tools/gradient">
+                    <span class="tool-link-text">
+                        <strong>Gradient Generator</strong>
+                        <span>Make colorful text for chat, MOTDs and server names.</span>
+                    </span>
+                    <span class="tool-link-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="14" width="10" height="20" rx="2"/><rect x="19" y="14" width="10" height="20" rx="2"/><rect x="32" y="14" width="10" height="20" rx="2"/></svg></span>
+                </a>
+                <a class="tool-link" href="#tools/skin">
+                    <span class="tool-link-text">
+                        <strong>Skin Editor</strong>
+                        <span>Paint Minecraft skins pixel by pixel and preview them in 3D.</span>
+                    </span>
+                    <span class="tool-link-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 40l4-10L34 8l6 6-22 22z"/><path d="M30 12l6 6"/></svg></span>
+                </a>
+                <a class="tool-link" href="#tools/chibi">
+                    <span class="tool-link-text">
+                        <strong>Chibi Maker</strong>
+                        <span>Turn any skin into a cute big-headed pixel avatar.</span>
+                    </span>
+                    <span class="tool-link-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="10" y="6" width="28" height="22" rx="3"/><rect x="16" y="28" width="16" height="8"/><rect x="16" y="36" width="6" height="6"/><rect x="26" y="36" width="6" height="6"/></svg></span>
+                </a>
+                <a class="tool-link" href="#tools/banner">
+                    <span class="tool-link-text">
+                        <strong>Banner Designer</strong>
+                        <span>Design banners layer by layer and get the give command.</span>
+                    </span>
+                    <span class="tool-link-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6v38"/><path d="M12 8h26v22l-13-6-13 6"/></svg></span>
+                </a>
+                <a class="tool-link" href="#tools/skinart">
+                    <span class="tool-link-text">
+                        <strong>Skin Art Maker</strong>
+                        <span>Split an image into skins that draw a picture in your NameMC skin history.</span>
+                    </span>
+                    <span class="tool-link-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="10" width="10" height="10"/><rect x="19" y="10" width="10" height="10"/><rect x="32" y="10" width="10" height="10"/><rect x="6" y="23" width="10" height="10"/><rect x="19" y="23" width="10" height="10"/><rect x="32" y="23" width="10" height="10"/></svg></span>
+                </a>
             </div>
+        </section>
+
+        <section id="toolGradient" class="page hidden" aria-label="Gradient Generator">
+            <button type="button" class="back-btn" data-go="tools">← Back to Tools</button>
+            <header class="page-heading">
+                <h1>Gradient Generator</h1>
+                <p>Make colorful text for chat, MOTDs and server names.</p>
+            </header>
 
             <div class="tool" id="tool-gradient">
                 <label class="tool-label" for="gradText">Text</label>
@@ -141,8 +240,16 @@
                 <textarea id="gradOutput" class="admin-textarea" rows="4" readonly></textarea>
                 <button type="button" class="back-btn" id="gradCopy">Copy</button>
             </div>
+        </section>
 
-            <div class="tool hidden" id="tool-skin">
+        <section id="toolSkin" class="page hidden" aria-label="Skin Editor">
+            <button type="button" class="back-btn" data-go="tools">← Back to Tools</button>
+            <header class="page-heading">
+                <h1>Skin Editor</h1>
+                <p>Paint a skin pixel by pixel and preview it in 3D.</p>
+            </header>
+
+            <div class="tool" id="tool-skin">
                 <div class="skin-editor">
                     <div class="skin-editor-main">
                         <div class="skin-canvas-wrap">
@@ -175,6 +282,127 @@
                         <canvas id="skinPreview" aria-label="3D preview of your skin"></canvas>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section id="toolChibi" class="page hidden" aria-label="Chibi Maker">
+            <button type="button" class="back-btn" data-go="tools">← Back to Tools</button>
+            <header class="page-heading">
+                <h1>Chibi Maker</h1>
+                <p>Turn any skin into a cute big-headed pixel avatar.</p>
+            </header>
+
+            <div class="tool" id="tool-chibi">
+                <div class="chibi-preview"><canvas id="chibiCanvas" width="18" height="28" aria-label="Your chibi avatar"></canvas></div>
+
+                <div class="tool-row">
+                    <input type="text" id="chibiUser" class="cm-search" placeholder="Java username..." maxlength="16" autocomplete="off" aria-label="Java username">
+                    <button type="button" class="profile-copy" id="chibiLoad">Load</button>
+                </div>
+                <div class="tool-row">
+                    <label class="profile-copy file-btn">Upload skin PNG<input type="file" id="chibiFile" accept="image/png" hidden></label>
+                    <label><input type="checkbox" id="chibiSlim"> Slim arms (Alex)</label>
+                    <label><input type="checkbox" id="chibiOutline" checked> Outline</label>
+                </div>
+                <div class="tool-row">
+                    <label for="chibiBg">Background</label>
+                    <select id="chibiBg" class="cm-search" style="width:auto">
+                        <option value="">Transparent</option>
+                        <option value="#ffffff">White</option>
+                        <option value="#1c1c1c">Dark</option>
+                        <option value="#7f5af0">Purple</option>
+                    </select>
+                    <label for="chibiScale">Size</label>
+                    <select id="chibiScale" class="cm-search" style="width:auto">
+                        <option value="8">8x</option>
+                        <option value="16" selected>16x</option>
+                        <option value="24">24x</option>
+                    </select>
+                    <button type="button" class="back-btn" id="chibiDownload">Download PNG</button>
+                </div>
+                <p class="player-message" id="chibiMsg" role="status">Load a skin to begin.</p>
+                <p class="note-small">Want poses and animations? Try the full <a href="https://nogard.dev/tools/minecraft-chibi-skin-maker" target="_blank" rel="noopener noreferrer">chibi maker by Nogard</a>.</p>
+            </div>
+        </section>
+
+        <section id="toolBanner" class="page hidden" aria-label="Banner Designer">
+            <button type="button" class="back-btn" data-go="tools">← Back to Tools</button>
+            <header class="page-heading">
+                <h1>Banner Designer</h1>
+                <p>Design a Minecraft banner layer by layer.</p>
+            </header>
+
+            <div class="tool" id="tool-banner">
+                <div class="chibi-preview"><canvas id="bannerCanvas" width="20" height="40" aria-label="Your banner"></canvas></div>
+
+                <span class="tool-label">Base color</span>
+                <div class="swatches" id="bannerBase"></div>
+
+                <span class="tool-label">Add a layer</span>
+                <select id="bannerPattern" class="cm-search" aria-label="Pattern"></select>
+                <div class="swatches" id="bannerColors" style="margin-top:10px"></div>
+                <div class="tool-row">
+                    <button type="button" class="back-btn" id="bannerAdd">Add layer</button>
+                    <button type="button" class="profile-copy" id="bannerClear">Clear layers</button>
+                </div>
+
+                <span class="tool-label">Layers</span>
+                <div id="bannerLayers"></div>
+
+                <label class="tool-label" for="bannerCmd">Give command (Java 1.20.5 and newer)</label>
+                <textarea id="bannerCmd" class="admin-textarea" rows="4" readonly></textarea>
+                <div class="tool-row">
+                    <button type="button" class="back-btn" id="bannerCopy">Copy command</button>
+                    <button type="button" class="back-btn" id="bannerDownload">Download PNG</button>
+                </div>
+                <p class="note-small">The preview is a simplified drawing, so the in-game look can differ slightly. Special patterns that need artwork (creeper, skull, flower, globe and others) aren't included yet.</p>
+            </div>
+        </section>
+
+        <section id="toolSkinArt" class="page hidden" aria-label="Skin Art Maker">
+            <button type="button" class="back-btn" data-go="tools">← Back to Tools</button>
+            <header class="page-heading">
+                <h1>Skin Art Maker</h1>
+                <p>Turn an image into 26 skins that draw a picture in your NameMC skin history.</p>
+            </header>
+
+            <div class="tool" id="tool-skinart">
+                <div class="chibi-preview"><canvas id="artCanvas" width="72" height="24" aria-label="Your skin art preview"></canvas></div>
+                <p class="note-small" style="margin-top:0">The hatched square at the top left isn't used. It's where your main skin shows.</p>
+
+                <div class="tool-row">
+                    <label class="profile-copy file-btn">Choose image<input type="file" id="artFile" accept="image/*" hidden></label>
+                    <label for="artFit">Fit</label>
+                    <select id="artFit" class="cm-search" style="width:auto">
+                        <option value="stretch">Stretch</option>
+                        <option value="contain">Fit inside</option>
+                        <option value="cover">Fill and crop</option>
+                    </select>
+                    <label for="artBg">Background</label>
+                    <input type="color" id="artBg" value="#1c1c1c" aria-label="Background color">
+                </div>
+
+                <span class="tool-label">The rest of the skin (optional)</span>
+                <div class="tool-row">
+                    <label class="profile-copy file-btn">Use a base skin<input type="file" id="artBase" accept="image/png" hidden></label>
+                    <button type="button" class="profile-copy" id="artBaseClear">Remove base skin</button>
+                    <label for="artBody">Body color</label>
+                    <input type="color" id="artBody" value="#3a3a40" aria-label="Body color">
+                </div>
+
+                <div class="tool-row">
+                    <button type="button" class="back-btn" id="artDownload">Download 26 skins (.zip)</button>
+                </div>
+                <p class="player-message" id="artMsg" role="status">Choose an image to begin.</p>
+
+                <span class="tool-label">How to use it</span>
+                <ol class="steps">
+                    <li>Choose an image. It's resized to 72×24 pixels.</li>
+                    <li>Download the zip and unzip it. It holds skin-01.png to skin-26.png.</li>
+                    <li>Apply skin-26 first, then 25, 24 and so on down to skin-01, and finish with your normal skin.</li>
+                    <li>After each one, open your NameMC profile and wait until that skin shows in your history before applying the next.</li>
+                </ol>
+                <p class="note-small">Mojang limits how fast you can change skins. If a change fails, wait a few minutes and try again.</p>
             </div>
         </section>
 
