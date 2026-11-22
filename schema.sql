@@ -33,3 +33,4 @@ CREATE TABLE IF NOT EXISTS skin_history (
     last_seen  INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_skin_unique ON skin_history (uuid, skin_hash);
+CREATE INDEX IF NOT EXISTS idx_skin_hash ON skin_history (skin_hash);
